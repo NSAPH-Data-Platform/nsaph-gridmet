@@ -1,10 +1,10 @@
 #!/usr/bin/env cwl-runner
-### Downloader of gridMET Data
+### Downloader of AirNow Data
 #  Copyright (c) 2021. Harvard University
 #
 #  Developed by Research Software Engineering,
 #  Faculty of Arts and Sciences, Research Computing (FAS RC)
-#  Author: Michael A Bouzinier
+#  Author: Quantori LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -21,42 +21,32 @@
 
 cwlVersion: v1.2
 class: CommandLineTool
-baseCommand: [wget]
-
-requirements:
-  InlineJavascriptRequirement: {}
+baseCommand: [python, -m, gridmet.shapes]
 
 doc: |
-  This tool downloads gridMET data from Atmospheric Composition Analysis Group
-  and then preprocesses it to aggregate over shapes (zip codes or counties)
+  This tool downloads AirNow data from EPA website
 
 inputs:
+  proxy:
+    type: string?
+    default: ""
+    doc: HTTP/HTTPS Proxy if required
   year:
-    type: string
-    doc: "Year to process"
-  band:
-    type: string
+    type: string[]
     doc: |
-      [Gridmet Band](https://gee.stac.cloud/WUtw2spmec7AM9rk6xMXUtStkMtbviDtHK?t=bands)
-
-arguments:
-  - position: 1
-    valueFrom: |
-      ${
-          var base = "https://www.northwestknowledge.net/metdata/data/";
-          return base + inputs.band + "_" + inputs.year + ".nc";
-      }
+      Parameter code. Either a numeric code (e.g. 88101, 44201)
+      or symbolic name (e.g. PM25, NO2).
+      See more: [AQS Code List](https://www.epa.gov/aqs/aqs-code-list)
+    inputBinding:
+      prefix: --year
 
 outputs:
-  log:
-    type: File?
+  shape_files:
+    type: File[]
     outputBinding:
-      glob: "*.log"
-  data:
-    type: File?
-    outputBinding:
-      glob: "*.nc"
-  errors:
-    type: stderr
-
-stderr: registry.err
+      glob: "*.shp"
+    secondaryFiles:
+      - "^.dbf"
+      - "^.shx"
+      - "^.prj"
+      - "^.cpg"

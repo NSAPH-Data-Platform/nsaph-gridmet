@@ -18,9 +18,10 @@
 #
 
 import datetime
-from enum import IntEnum, Enum
+from enum import Enum
 from typing import Optional
 
+from nsaph_gis.constants import Geography, RasterizationStrategy
 from nsaph_utils.utils.context import Context, Argument, Cardinality
 
 var_doc_string = """
@@ -49,17 +50,6 @@ class DateFilter:
         return True
 
 
-class Geography(Enum):
-    """Type of geography"""
-
-    zip = "zip"
-    """Zip Code Area"""
-    county = "county"
-    """County"""
-    custom = "custom"
-    """User custom"""
-
-
 class Shape(Enum):
     """Type of shape"""
 
@@ -67,31 +57,6 @@ class Shape(Enum):
     """Point"""
     polygon = "polygon"
     """Polygon"""
-
-
-class RasterizationStrategy(Enum):
-    """
-    Rasterization Strategy, see details at
-    https://pythonhosted.org/rasterstats/manual.html#rasterization-strategy
-    """
-    default = "default"
-    """
-    The default strategy is to include all pixels along the line render path
-    (for lines), or cells where the center point is within the polygon
-    (for polygons). 
-    """
-    all_touched = "all_touched"
-    """
-    Alternate, all_touched strategy, rasterizes the geometry
-    by including all pixels that it touches.
-    """
-    combined = "combined"
-    """
-    Calculate statistics using both default and all_touched strategy and
-    combine results, e.g. using arithmetic means 
-    """
-    downscale = "downscale"
-    """Use disaggregate with factor = 5"""
 
 
 class GridmetVariable(Enum):
@@ -193,6 +158,11 @@ class GridmetContext(Context):
     _dates = Argument("dates",
                       help="Filter dates - for debugging purposes only",
                       required=False)
+    _shape_files = Argument("shape_files",
+                       cardinality=Cardinality.multiple,
+                       default="",
+                       help="Path to shape files",
+                       )
 
     def __init__(self, doc = None):
         """
@@ -232,6 +202,7 @@ class GridmetContext(Context):
         
         :type: Shape
         """
+        self.shape_files = None
 
         self.points = None
         '''Path to CSV file containing points'''
@@ -242,7 +213,6 @@ class GridmetContext(Context):
         self.dates: Optional[DateFilter] = None
         '''Filter on dates - for debugging purposes only'''
         super().__init__(GridmetContext, doc)
-        return
 
     def validate(self, attr, value):
         value = super().validate(attr, value)
@@ -258,4 +228,3 @@ class GridmetContext(Context):
             if value:
                 return DateFilter(value)
         return value
-
