@@ -22,6 +22,15 @@ import gzip
 import os
 import sys
 
+from deprecated.sphinx import deprecated
+
+
+@deprecated(
+    reason="Do not use",
+    version="0.2"
+)
+def do_not_use():
+    pass
 
 if __name__ == '__main__':
     f1 = sys.argv[1]

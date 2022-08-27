@@ -1,3 +1,7 @@
+"""
+Deprecated Converter of CSV files to HDF5
+"""
+
 #  Copyright (c) 2021. Harvard University
 #
 #  Developed by Research Software Engineering,
@@ -24,6 +28,9 @@ import h5py
 import pandas
 from nsaph_utils.utils.io_utils import fopen
 
+from deprecated.sphinx import deprecated
+
+
 
 def to_data_frame(path: str) -> pandas.DataFrame:
     with fopen(path, "rb") as stream:
@@ -38,6 +45,10 @@ def to_hdf5(df: pandas.DataFrame, path: str):
         f.create_dataset(name, data=df)
 
 
+@deprecated(
+    reason="Use hdf5_export Module",
+    version="0.2"
+)
 def transfer(path: str):
     name = os.path.basename(path).split('.')[0]
     d = os.path.dirname(path)

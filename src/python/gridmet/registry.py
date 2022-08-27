@@ -1,3 +1,8 @@
+"""
+A utility to create skeleton data model (database schema)
+for gridMET data
+"""
+
 #  Copyright (c) 2021. Harvard University
 #
 #  Developed by Research Software Engineering,
@@ -30,10 +35,8 @@ from gridmet.config import Geography, GridmetVariable
 
 class Registry:
     """
-    This class parses File Transfer Summary files and
-    creates YAML data model. It can either
-    update built-in registry or write
-    the model to a designated path
+    This class
+    creates YAML data model for gridMET tables.
     """
 
     def __init__(self, destination:str):

@@ -1,3 +1,8 @@
+"""
+This module contains classes used to define, schedule and execute
+long running computations used by gridMET pipelines
+"""
+
 #  Copyright (c) 2021. Harvard University
 #
 #  Developed by Research Software Engineering,
@@ -97,8 +102,7 @@ class ListCollector(Collector):
 class ComputeGridmetTask(ABC):
     """
     An abstract class for a computational task that processes data in
-    Unidata netCDF (Version 4) format:
-    https://www.unidata.ucar.edu/software/netcdf/
+    `Unidata netCDF (Version 4) format <https://www.unidata.ucar.edu/software/netcdf/>`_
     """
 
     origin = date(1900, 1, 1)

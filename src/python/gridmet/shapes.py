@@ -1,12 +1,9 @@
 """
-Python module to download EPA AirNow Data using WebServices API
+A command line utility to download shapefiles
 
-https://docs.airnowapi.org/webservices
-
-AirNow contains real-time up-to-date pollution data but is less reliable
-than AQS
-
+For details, see: `GISDownloader <../../../gis/doc/members/downloader.html>`_
 """
+
 #  Copyright (c) 2021-2022. Harvard University
 #
 #  Developed by Research Software Engineering,

@@ -1,3 +1,9 @@
+"""
+This module contains classes and enums used to configure
+gridMET processing and specify its parameters
+"""
+
+
 #  Copyright (c) 2021. Harvard University
 #
 #  Developed by Research Software Engineering,
@@ -31,6 +37,23 @@ var_doc_string = """
 
 
 class DateFilter:
+    """
+    Class, implementing filtering by dates. Primarily used for
+    debugging and testing purposes to avoid long running calculations.
+
+    The condition can be specified in one of the following ways:
+
+    - Range: `YYYY-MM-DD:YYYY-MM-DD` only dates falling in teh given
+        range will be accepted. Example: '2009-12-30:2010-01-03' means
+        that only 5 days between the 30-th of December of 2009 and
+        January 3, 2010 will be accepted
+    - Day of Month: `dayofmonth:DD`, example: 'dayofmonth:12' means that
+        only dates corresponding to teh 12-th of every month will be accepted
+    - Month: `month:MM` only dates in teh given month will be accepted
+    - Month and day of a year: `date:MM-DD`, example: 'date:03-14' means
+        that only March 14 for each year will be accepted.
+    """
+
     def __init__(self, value: str):
         self.min = None
         self.max = None
@@ -85,7 +108,7 @@ class Shape(Enum):
 
 class GridmetVariable(Enum):
     """
-    `Gridmet Bands <https://gee.stac.cloud/WUtw2spmec7AM9rk6xMXUtStkMtbviDtHK?t=bands>`
+    `Gridmet Bands <https://gee.stac.cloud/WUtw2spmec7AM9rk6xMXUtStkMtbviDtHK?t=bands>`_
     """
     bi = "bi"
     """Burning index: NFDRS fire danger index"""
@@ -123,7 +146,7 @@ class GridmetVariable(Enum):
 
 class GridmetContext(Context):
     """
-    Defines a context for running a gridmet pipeline.
+    Defines a context of a running a gridmet pipeline.
     """
     _variables = Argument("variables",
                           help="Gridmet bands or variables",
@@ -191,6 +214,7 @@ class GridmetContext(Context):
     def __init__(self, doc = None):
         """
         Constructor
+        
         :param doc: Optional argument, specifying what to print as documentation
         """
 

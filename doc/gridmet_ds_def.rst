@@ -1,5 +1,6 @@
 Configuration Object
 ====================
+
 .. autoclass:: gridmet.config.GridmetContext
    :members:
    :exclude-members: validate
