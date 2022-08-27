@@ -2,17 +2,6 @@
 
 [Documentation Home](https://nsaph-data-platform.github.io/nsaph-platform-docs/home.html)
 
-```{toctree}
----
-maxdepth: 2
-hidden:
-glob:
----
-classes
-enums
-gridmet_tools
-pipeline/*
-```
 
 ```{contents}
 ---
@@ -98,3 +87,22 @@ source /home/nsaph/projects/tools/gridmet/.gridmet/bin/activate && PYTHONPATH=/h
 
 The results can be then found in `data/processed` folder
 
+## Python modules
+
+```{toctree}
+---
+maxdepth: 2
+glob:
+---
+python_components
+```
+
+## CWL pipelines and tools
+
+```{toctree}
+---
+maxdepth: 2
+glob:
+---
+pipeline/*
+```
