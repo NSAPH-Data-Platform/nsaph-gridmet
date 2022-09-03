@@ -1,3 +1,8 @@
+"""
+Reads a NetCDF file (*.nc) and prints some information
+about it
+"""
+
 #  Copyright (c) 2021. Harvard University
 #
 #  Developed by Research Software Engineering,
@@ -16,6 +21,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+import sys
 
 import netCDF4 as nc
 import random
@@ -23,7 +29,7 @@ import random
 from gridmet.gridmet_tools import get_address
 
 if __name__ == '__main__':
-    fn = '/Users/misha/harvard/projects/data_server/nsaph/local_data/V4NA03_PM25_NA_200001_200012-RH35.nc'
+    fn = sys.argv[1]
     ds = nc.Dataset(fn)
     print(ds)
 
@@ -35,6 +41,10 @@ if __name__ == '__main__':
         lo = random.randrange(0, len(lon))
         la = random.randrange(0, len(lat))
         address = get_address(float(lat[la]), float(lon[lo]))
-        print("[{:d},{:d}]: ({:f}, {:f})".format(lo, la, lat[la], lon[lo]))
+        data = "[{:d},{:d}]: ({:f}, {:f})".format(lo, la, lat[la], lon[lo])
+        if address is not None:
+            data += "; Address: " + str(address)
+        print(data)
+
 
     pass
