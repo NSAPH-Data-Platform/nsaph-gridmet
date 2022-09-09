@@ -41,7 +41,7 @@ if __name__ == '__main__':
         lo = random.randrange(0, len(lon))
         la = random.randrange(0, len(lat))
         address = get_address(float(lat[la]), float(lon[lo]))
-        data = "[{:d},{:d}]: ({:f}, {:f})".format(lo, la, lat[la], lon[lo])
+        data = "[{:d},{:d}]: ({:f}, {:f}: {})".format(lo, la, lat[la], lon[lo], str(pm25[la, lo]))
         if address is not None:
             data += "; Address: " + str(address)
         print(data)

@@ -219,7 +219,7 @@ class ComputeShapesTask(ComputeGridmetTask):
 
         :param date_filter:
         :param year: year
-        :param variable: Gridemt band (variable)
+        :param variable: gridMET band (variable)
         :param infile: File with source data in  NCDF4 format
         :param outfile: Resulting CSV file
         :param strategy: Rasterization strategy to use

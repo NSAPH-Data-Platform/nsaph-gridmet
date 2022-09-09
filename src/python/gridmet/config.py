@@ -248,7 +248,7 @@ class GridmetContext(Context):
         """
         Type of shapes to aggregate over, e.g. points, polygons
         
-        :type: Shape
+        :type: List[Shape]
         """
         self.shape_files = None
 

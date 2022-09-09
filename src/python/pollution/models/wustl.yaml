@@ -1,0 +1,32 @@
+wustl:
+  reference: "https://sites.wustl.edu/acag/datasets/surface-pm2-5/"
+  header: true
+  quoting: 3
+  index: "unless excluded"
+  schema: "pollution_wustl"
+  description: "Data model for pollution downloaded from Washington University in St. Louis"
+  tables:
+    pm25_monthly_county:
+      description: |
+        Estimated annual and monthly ground-level fine particulate matter
+        (PM2.5) for 1998-2020 by combining Aerosol Optical Depth (AOD)
+        retrievals from the NASA MODIS, MISR, and SeaWIFS instruments with
+        the GEOS-Chem chemical transport model, and subsequently calibrating
+        to global ground-based observations using a Geographically Weighted
+        Regression (GWR), as detailed in the below reference for V5.GL.01.
+        V5.GL.02 follows the methodology of V5.GL.01, but updates the
+        ground-based observations used to calibrate the geophysical PM2.5
+        estimates for the entire time series, and extends temporal
+        coverage through 2020.
+
+        Aggregated at US county level
+
+      columns:
+        - county
+        - year
+        - month
+        - PM25
+      primary_key:
+        - county
+        - year
+        - month
