@@ -72,7 +72,7 @@ SELECT
     rm.pm25 AS rm_pm25
 FROM
     epa.pm25_monthly AS ep
-    join pollution_wustl.pm25_monthly_county as rm
+    full outer join pollution_wustl.pm25_monthly_county as rm
     on
         ep.year = rm.year
         and ep.month = rm.month
