@@ -71,6 +71,16 @@ class Aggregator:
         logging.info("%s => %s", self.infile, self.outfile)
         self.dataset = Dataset(self.infile)
 
+    def write_header(self):
+        with fopen(self.outfile, "wt") as out:
+            writer = CSVWriter(out)
+            key = self.geography.value.lower()
+            headers = [self.variable, key]
+            if self.extra_headers:
+                headers += self.extra_headers
+            writer.writerow(headers)
+        return self.outfile
+
     def execute(self, mode: str = "wt"):
         """
         Executes computational task
@@ -81,14 +91,14 @@ class Aggregator:
         """
 
         self.prepare()
+        if 'a' not in mode:
+            self.write_header()
+            if 't' in mode:
+                mode = 'at'
+            else:
+                mode = 'a'
         with fopen(self.outfile, mode) as out:
             writer = CSVWriter(out)
-            if 'a' not in mode:
-                key = self.geography.value.lower()
-                headers = [self.variable, key]
-                if self.extra_headers:
-                    headers += self.extra_headers
-                writer.writerow(headers)
             self.collect_data(writer)
 
     def collect_data(self, collector: Collector):
@@ -105,15 +115,26 @@ class Aggregator:
         if self.factor > 1:
             layer = disaggregate(layer, self.factor)
 
+        fid, _ = os.path.splitext(os.path.basename(self.infile))
         now = datetime.now()
-        logging.info("%s:%s:%s", str(now), self.geography.value, self.variable)
+        logging.info(
+            "%s:%s:%s: %s",
+            str(now),
+            self.geography.value,
+            self.variable,
+            fid
+        )
 
         for record in StatsCounter.process(self.strategy, self.shapefile, self.affine, layer, self.geography):
             row = [record.mean, record.prop]
             if self.extra_values:
                 row += self.extra_values
             writer.writerow(row)
-        logging.debug("%s: completed in %s", str(datetime.now()), str(datetime.now() - now))
+        logging.info(
+            "%s: %s completed in %s", str(datetime.now()),
+            fid,
+            str(datetime.now() - now)
+        )
 
 
 if __name__ == '__main__':

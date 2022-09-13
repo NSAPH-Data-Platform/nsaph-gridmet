@@ -31,7 +31,7 @@ doc: |
 
 inputs:
   registry:
-    type: File
+    type: File?
     inputBinding:
       prefix: --registry
     doc: |

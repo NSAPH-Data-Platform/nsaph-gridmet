@@ -25,7 +25,29 @@ wustl:
         - county
         - year
         - month
-        - PM25
+        - PM25:
+            type: NUMERIC
+        - fips5:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (county::INT) STORED"
+        - fips2:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (substring(county, 1, 2)::INT) STORED"
+        - fips3:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (substring(county, 3, 3)::INT) STORED"
+        - state:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (public.fips2state(substring(county, 1, 2)::VARCHAR)) STORED"
+        - state_iso:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (public.fips2state_iso(substring(county, 1, 2))) STORED"
+
       primary_key:
         - county
         - year

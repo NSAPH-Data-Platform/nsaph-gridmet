@@ -99,7 +99,7 @@ class Registry:
     @staticmethod
     def built_in_registry_path():
         src = Path(__file__).parents[3]
-        return os.path.join(src, "yml", "cms.yaml")
+        return os.path.join(src, "yml", "gridmet.yaml")
 
 
 if __name__ == '__main__':

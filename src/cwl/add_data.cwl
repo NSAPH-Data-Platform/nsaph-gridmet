@@ -32,7 +32,7 @@ doc: |
 
 inputs:
   registry:
-    type: File
+    type: File?
     inputBinding:
       prefix: --registry
     doc: |
@@ -53,7 +53,7 @@ inputs:
     inputBinding:
       prefix: --connection
   input:
-    type: File
+    type: File?
     inputBinding:
       prefix: --data
     doc: |
@@ -83,9 +83,10 @@ inputs:
   depends_on:
     type: Any?
     doc: a special field used to enforce dependencies and execution order
-
-arguments:
-    - valueFrom: "gridmet"
+  domain:
+    type: string
+    default: gridmet
+    inputBinding:
       prefix: --domain
 
 

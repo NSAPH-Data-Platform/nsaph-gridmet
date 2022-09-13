@@ -6,7 +6,7 @@ with open("README.md", "r") as readme:
 
 setup(
     name='gridmet',
-    version="0.0.1.3",
+    version="0.0.2.1",
     url='https://gitlab-int.rc.fas.harvard.edu/rse/francesca_dominici/tools/gridmet',
     license='',
     author='Michael Bouzinier',
@@ -15,9 +15,10 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     package_dir={
-        "gridmet": "./src/python/gridmet"
+        "gridmet": "./src/python/gridmet",
+        "pollution": "./src/python/pollution"
     },
-    packages=["gridmet"],
+    packages=["gridmet", "pollution"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: Harvard University :: Development",

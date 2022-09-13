@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+from typing import Optional
 
 from nsaph import init_logging
 
@@ -17,11 +18,15 @@ class WUSTLFile:
             then it is constructed from the command line arguments
         """
 
-        init_logging(name="wustl-aggregation", level=logging.INFO)
         if not context:
             context = GridmetContext(__doc__).instantiate()
         self.context = context
-        self.aggregator = None
+        log = os.path.basename(self.context.raw_downloads).split('.')[0]
+        init_logging(
+            name="aggr-" + log,
+            level=logging.INFO
+        )
+        self.aggregator: Optional[Aggregator] = None
         self.infile = self.context.raw_downloads
         self.year = None
         self.month = None
@@ -41,8 +46,11 @@ class WUSTLFile:
             raise ValueError("NetCDF file is expected (extension .nc)")
         self.parse_file_name()
         extra_columns = ["Year", "Month"], [self.year, self.month]
-        of, _ = os.path.splitext(self.infile)
+        of, _ = os.path.splitext(os.path.basename(self.infile))
         of += ".csv"
+        if not os.path.isdir(self.context.destination):
+            os.makedirs(self.context.destination, exist_ok=True)
+        of = os.path.join(self.context.destination, of)
         if self.context.compress:
             of += ".gz"
 
@@ -64,11 +72,19 @@ class WUSTLFile:
         return
 
     def execute(self):
-        self.aggregator.execute()
-        print("Aggregation of data from {} by {} has been executed".format(
-            self.infile,
-            self.context.geography.value
-        ))
+        if os.path.isfile(self.infile):
+            self.aggregator.execute()
+            print(
+                "Aggregation of data from {} by {} has been executed. Output: {}"
+                    .format(
+                        self.infile,
+                        self.context.geography.value,
+                        self.aggregator.outfile
+            ))
+        else:
+            of = self.aggregator.write_header()
+            print("Input file was not found. Created empty file: {}".format(of))
+        return
 
 
 if __name__ == '__main__':
