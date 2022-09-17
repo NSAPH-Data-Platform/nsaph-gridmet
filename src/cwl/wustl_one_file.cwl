@@ -64,6 +64,9 @@ inputs:
 
 steps:
   findfile:
+    doc: |
+      Given input directory, variable (band), year and month,
+      evaluates the exepected file name for the input data
     run:
       class: ExpressionTool
       inputs:
