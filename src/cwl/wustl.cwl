@@ -73,6 +73,7 @@ inputs:
 
 steps:
   make_table_name:
+    doc: Given variable and geography type (zip/county) evaluates table name
     run:
       class: ExpressionTool
       inputs:
