@@ -43,13 +43,13 @@ class DateFilter:
 
     The condition can be specified in one of the following ways:
 
-    - Range: `YYYY-MM-DD:YYYY-MM-DD` only dates falling in teh given
+    - Range: `YYYY-MM-DD:YYYY-MM-DD` only dates falling in the given
         range will be accepted. Example: '2009-12-30:2010-01-03' means
         that only 5 days between the 30-th of December of 2009 and
         January 3, 2010 will be accepted
     - Day of Month: `dayofmonth:DD`, example: 'dayofmonth:12' means that
-        only dates corresponding to teh 12-th of every month will be accepted
-    - Month: `month:MM` only dates in teh given month will be accepted
+        only dates corresponding to the 12-th of every month will be accepted
+    - Month: `month:MM` only dates in the given month will be accepted
     - Month and day of a year: `date:MM-DD`, example: 'date:03-14' means
         that only March 14 for each year will be accepted.
     """
