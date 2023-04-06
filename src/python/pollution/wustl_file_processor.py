@@ -34,20 +34,32 @@ class WUSTLFile:
 
     def parse_file_name(self):
         m = re.search("([1|2][0-9]{3}[0|1][0-9])_\\1", self.infile)
-        if not m:
-            raise ValueError("File name: {} does not match expected pattern"
+        if m:
+            ym = m.group(1)
+            self.year = ym[:4]
+            self.month = ym[4:]
+            return
+        m = re.search("([1|2][0-9]{3})[0|1][0-9]_\\1[0|1][0-9]", self.infile)
+        if m:
+            ym = m.group(1)
+            self.year = ym[:4]
+            return 
+        raise ValueError("File name: {} does not match expected pattern"
                              .format(self.infile))
-        ym = m.group(1)
-        self.year = ym[:4]
-        self.month = ym[4:]
 
     def prepare(self):
         if not self.infile.endswith(".nc"):
             raise ValueError("NetCDF file is expected (extension .nc)")
         self.parse_file_name()
-        extra_columns = ["Year", "Month"], [self.year, self.month]
+        if self.year is not None:
+            if self.month is not None:
+                extra_columns = ["Year", "Month"], [self.year, self.month]
+            else:
+                extra_columns = ["Year"], [self.year]
+        else:
+            extra_columns = None
         of, _ = os.path.splitext(os.path.basename(self.infile))
-        of += ".csv"
+        of += '_' + self.context.geography.value + ".csv"
         if not os.path.isdir(self.context.destination):
             os.makedirs(self.context.destination, exist_ok=True)
         of = os.path.join(self.context.destination, of)
