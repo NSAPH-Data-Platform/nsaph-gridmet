@@ -23,7 +23,7 @@ dependencies:
   - xz
   - zlib
   - pip:
-      - git+https://github.com/NSAPH-Data-Platform/nsaph-utils:git@develop
+      - git+https://github.com/NSAPH-Data-Platform/nsaph-utils.git@develop
       - git+https://github.com/NSAPH-Data-Platform/nsaph-core-platform.git@develop
       - git+https://github.com/NSAPH-Data-Platform/nsaph-gis.git@develop
       - git+https://github.com/NSAPH-Data-Platform/nsaph-gridmet.git@develop
