@@ -6,7 +6,7 @@ with open("README.md", "r") as readme:
 
 setup(
     name='gridmet',
-    version="0.0.2.1",
+    version="0.0.2.2",
     url='https://gitlab-int.rc.fas.harvard.edu/rse/francesca_dominici/tools/gridmet',
     license='',
     author='Michael Bouzinier',
@@ -37,8 +37,7 @@ setup(
         'rasterstats',
         'rasterio >= 1.1.0',
         'requests',
-        'nsaph_utils >= 0.0.5.2',
-        'nsaph>=0.0.2.0',
+        'nsaph_gis>=0.0.3',
     ],
     package_data={
         '': ["**/*.yaml"]

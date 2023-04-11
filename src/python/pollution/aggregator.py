@@ -52,7 +52,7 @@ class Aggregator:
         self.outfile = outfile
         self.factor = 1
         self.affine = None
-        self.dataset = None
+        self.dataset: Dataset = None
         self.variable = variable
         if strategy == RasterizationStrategy.downscale:
             self.factor = 5
@@ -70,6 +70,15 @@ class Aggregator:
             self.affine = get_affine_transform(self.infile, self.factor)
         logging.info("%s => %s", self.infile, self.outfile)
         self.dataset = Dataset(self.infile)
+        variables = set(self.dataset.variables)
+        for v in variables:
+            if v == self.variable:
+                return
+        for v in variables:
+            if v.lower() == self.variable.lower():
+                self.variable = v
+                return
+        raise ValueError("Variable {} not found in NetCDF file {}".format(self.variable, self.infile))
 
     def write_header(self):
         with fopen(self.outfile, "wt") as out:

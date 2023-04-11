@@ -109,6 +109,7 @@ class Shape(Enum):
 class GridmetVariable(Enum):
     """
     `Gridmet Bands <https://gee.stac.cloud/WUtw2spmec7AM9rk6xMXUtStkMtbviDtHK?t=bands>`_
+    and additional exposure variable types
     """
     bi = "bi"
     """Burning index: NFDRS fire danger index"""
@@ -142,6 +143,9 @@ class GridmetVariable(Enum):
     """Mean vapor pressure deficit: kPa"""
     vs = "vs"
     """Wind velocity at 10m: m/s"""
+    pm25 = "pm25"
+    """PM25 exposure data"""
+
 
 
 class GridmetContext(Context):
@@ -222,7 +226,7 @@ class GridmetContext(Context):
         """
         Gridmet bands or variables 
         
-        :type: GridmetVariable 
+        :type: List[GridmetVariable] 
         """
 
         self.strategy = None

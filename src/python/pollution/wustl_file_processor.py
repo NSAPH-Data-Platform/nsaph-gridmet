@@ -72,9 +72,13 @@ class WUSTLFile:
                              "len(self.context.shape_files)={:d}"
                              .format(len(self.context.shape_files)))
         shape_file = self.context.shape_files[0]
+        if len(self.context.variables) == 1:
+            variable = self.context.variables[0].value
+        else:
+            raise ValueError("Exactly one variable is required")
         self.aggregator = Aggregator(
             infile=self.infile,
-            variable="PM25",
+            variable=variable,
             outfile=of,
             strategy=self.context.strategy,
             shapefile=shape_file,

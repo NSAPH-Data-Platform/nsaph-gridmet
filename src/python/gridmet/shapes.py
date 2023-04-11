@@ -26,14 +26,14 @@ For details, see: `GISDownloader <../../../gis/doc/members/downloader.html>`_
 import argparse
 
 from nsaph_gis.constants import Geography
-from nsaph_gis.downloader import GISDownloader
+from nsaph_gis.downloader import GISDownloader, CensusShapeCollection
 
 
-def download_shapes(year, geography):
+def download_shapes(year, geography: str, source: CensusShapeCollection):
     if geography == Geography.county.value:
         GISDownloader.download_county(year)
     elif geography == Geography.zip.value:
-        GISDownloader.download_zip(year)
+        GISDownloader.download_zcta(source, year)
     else:
         raise ValueError("Unknown geography: " + geography)
 
@@ -46,6 +46,12 @@ if __name__ == '__main__':
                         v.value for v in Geography
                     ])
                     )
+    ap.add_argument("--collection", "-c", required=True,
+                    help="One of: " + ", ".join([
+                        v.value for v in CensusShapeCollection
+                    ])
+                    )
     args = ap.parse_args()
+    c = {v.value: v for v in CensusShapeCollection}[args.collection]
 
-    download_shapes(year=args.year, geography=args.geography)
+    download_shapes(year=args.year, geography=args.geography, source=c)
