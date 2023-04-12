@@ -1,0 +1,30 @@
+name: exposures
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - ca-certificates
+  - conda-tree
+  - libcxx
+  - libffi
+  - libzlib
+  - ncurses
+  - openssl
+  - libcurl
+  - pip
+  - python=3.8.12
+  - python_abi=3.8
+  - readline
+  - setuptools
+  - tk
+  - wheel
+  - xz
+  - zlib
+  - pip:
+      - git+https://github.com/NSAPH-Data-Platform/nsaph-utils.git@develop
+      - git+https://github.com/NSAPH-Data-Platform/nsaph-core-platform.git@develop
+      - git+https://github.com/NSAPH-Data-Platform/nsaph-gis.git@develop
+      - git+https://github.com/NSAPH-Data-Platform/nsaph-gridmet.git@develop
+
+
