@@ -1,4 +1,4 @@
-name: exposures
+name: exposures_no_r
 channels:
   - bioconda
   - conda-forge
