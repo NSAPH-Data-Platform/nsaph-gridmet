@@ -123,6 +123,8 @@ class Aggregator:
     def compute(self, writer: Collector, layer):
         if self.factor > 1:
             layer = disaggregate(layer, self.factor)
+        else:
+            layer = layer[:]
 
         fid, _ = os.path.splitext(os.path.basename(self.infile))
         now = datetime.now()
