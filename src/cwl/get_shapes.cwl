@@ -48,9 +48,17 @@ inputs:
       prefix: --year
   geo:
     type: string
-    doc: geography type, zip or county
+    doc: geography type, zip, zcta or county
     inputBinding:
       prefix: --geography
+  collection:
+    type: string
+    default: tiger
+    doc: |
+      [Collection of shapefiles](https://www2.census.gov/geo/tiger), 
+      either GENZ or TIGER
+    inputBinding:
+      prefix: --collection
 
 outputs:
   shape_files:

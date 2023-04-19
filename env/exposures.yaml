@@ -5,7 +5,6 @@ channels:
   - defaults
 dependencies:
   - ca-certificates
-  - conda-tree
   - libcxx
   - libffi
   - libzlib

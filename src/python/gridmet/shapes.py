@@ -33,6 +33,8 @@ def download_shapes(year, geography: str, source: CensusShapeCollection):
     if geography == Geography.county.value:
         GISDownloader.download_county(year)
     elif geography == Geography.zip.value:
+        raise ValueError("No known URL for zip code shapes. Consider using ZCTA or ESRI zip shape files.")
+    elif geography == Geography.zcta.value:
         GISDownloader.download_zcta(source, year)
     else:
         raise ValueError("Unknown geography: " + geography)

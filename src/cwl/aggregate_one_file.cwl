@@ -1,5 +1,5 @@
 #!/usr/bin/env cwl-runner
-### Workflow to aggregate and ingest one file in NetCDF format
+### Workflow to aggregate and ingest NetCDF files for one year
 #  Copyright (c) 2021-2022. Harvard University
 #
 #  Developed by Research Software Engineering,
@@ -31,38 +31,49 @@ requirements:
 
 
 doc: |
-  Sub-workflow that aggregates a single NetCDF file over a given
-  geography (zip codes or counties) and ingest the
-  aggregated data into the database
+  Sub-workflow to aggregate a NetCDF file for one year over a given
+  geography (zip codes or counties). Before aggregation, downloads
+  shape files fo this year from US Census website
 
 inputs:
   depends_on:
     type: Any?
+  proxy:
+    type: string?
+    default: ""
+    doc: HTTP/HTTPS Proxy if required
   downloads:
     type: Directory
   geography:
     type: string
-  year:
-    type: int
-  month:
-    type: int
   band:
     type: string
     default: pm25
-  table:
-    type: string
-  shape_files:
-    type: File[]
-    doc: "Paths to shape files"
+  year:
+    type: int
   strategy:
     type: string
     doc: "Rasterization strategy"
-  database:
-    type: File
-  connection_name:
+  shape_file_collection:
     type: string
+    default: tiger
+    doc: |
+      [Collection of shapefiles](https://www2.census.gov/geo/tiger), 
+      either GENZ or TIGER
 
 steps:
+  get_shapes:
+    run: get_shapes.cwl
+    in:
+      year:
+        valueFrom: $(String(inputs.yy))
+      yy: year
+      geo: geography
+      collection: shape_file_collection
+      proxy: proxy
+    out:
+      - shape_files
+
   findfile:
     doc: |
       Given input directory, variable (band), year and month,
@@ -74,22 +85,13 @@ steps:
           type: Directory
         year:
           type: int
-        month:
-          type: int
         band:
           type: string
       expression: |
         ${
           var v = inputs.band.toUpperCase();
           var y = String(inputs.year);
-          var m;
-          if (inputs.month < 10) {
-            m = '0' + String(inputs.month);
-          } else {
-            m =  String(inputs.month);
-          }
-          var ym = y + m;
-          var f = "V4NA03_" + v + "_NA_" + ym + "_" + ym + "-RH35.nc";
+          var f = "V4NA03_" + v + "_NA_" + y + "01_" + y + "12-RH35.nc";
           f = inputs.downloads.location + '/' + f;
           return {
             netcdf_file: {
@@ -103,7 +105,6 @@ steps:
           type: File
     in:
       year: year
-      month: month
       band: band
       downloads: downloads
     out: [netcdf_file]
@@ -115,27 +116,19 @@ steps:
       strategy: strategy
       geography: geography
       netcdf_data: findfile/netcdf_file
-      shape_files: shape_files
+      shape_files: get_shapes/shape_files
     out:
       - log
       - errors
       - csv_data
 
-  ingest:
-    doc: Ingests the aggregated data into the database
-    run: add_data.cwl
-    in:
-      table: table
-      input: aggregate/csv_data
-      database: database
-      connection_name: connection_name
-      domain:
-        valueFrom: "wustl"
-    out: [log, errors]
-
 outputs:
+  shapes:
+    type: File[]
+    outputSource: get_shapes/shape_files
+
   aggregate_data:
-    type: File?
+    type: File
     outputSource: aggregate/csv_data
   aggregate_log:
     type: File?
@@ -144,12 +137,6 @@ outputs:
     type: File
     outputSource: aggregate/errors
 
-  ingest_log:
-    type: File?
-    outputSource: ingest/log
-  ingest_err:
-    type: File
-    outputSource: ingest/errors
 
 
 
