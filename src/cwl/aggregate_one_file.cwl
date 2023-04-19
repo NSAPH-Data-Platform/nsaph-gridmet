@@ -48,7 +48,6 @@ inputs:
     type: string
   band:
     type: string
-    default: pm25
   year:
     type: int
   strategy:
@@ -117,6 +116,7 @@ steps:
       geography: geography
       netcdf_data: findfile/netcdf_file
       shape_files: get_shapes/shape_files
+      band: band
     out:
       - log
       - errors

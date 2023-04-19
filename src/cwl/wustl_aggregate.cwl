@@ -45,6 +45,11 @@ inputs:
     type: Directory?
     inputBinding:
       prefix: --shapes_dir
+  band:
+    type: string
+    default: pm25
+    inputBinding:
+      prefix: --var
   geography:
     type: string
     doc: |
@@ -63,8 +68,6 @@ inputs:
       prefix: --shape_files
 
 arguments:
-  - valueFrom: tmmx
-    prefix: --var
   - valueFrom: "."
     prefix: --destination
 
