@@ -9,6 +9,7 @@ dependencies:
   - libffi
   - libzlib
   - ncurses
+  - nodejs
   - openssl
   - libcurl
   - pip
