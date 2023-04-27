@@ -27,7 +27,7 @@ requirements:
   InlineJavascriptRequirement: {}
   ResourceRequirement:
     # coresMin: 1
-    coresMax: 2
+    coresMax: 4
 
 
 doc: |

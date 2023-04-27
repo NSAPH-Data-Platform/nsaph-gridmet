@@ -143,9 +143,17 @@ class GridmetVariable(Enum):
     """Mean vapor pressure deficit: kPa"""
     vs = "vs"
     """Wind velocity at 10m: m/s"""
+
+    # PM25 and components
     pm25 = "pm25"
     """PM25 exposure data"""
-
+    BCp = "BCp"
+    NH4p = "NH4p"
+    NITp = "NITp"
+    OMp = "OMp"
+    SO4p = "SO4p"
+    SOILp = "SOILp"
+    SSp = "SSp"
 
 
 class GridmetContext(Context):

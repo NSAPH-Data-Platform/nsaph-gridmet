@@ -90,7 +90,17 @@ steps:
         ${
           var v = inputs.band.toUpperCase();
           var y = String(inputs.year);
-          var f = "V4NA03_" + v + "_NA_" + y + "01_" + y + "12-RH35.nc";
+          var f;
+          if (v == 'PM25') {
+            f = "V4NA03_" + v + "_NA_" + y + "01_" + y + "12-RH35.nc";
+          } else {
+            v = inputs.band;
+            if (y == '2017') {
+              f = "GWRwSPEC.HEI_" + v + "_NA_" + y + "01_" + y + "12-wrtSPECtotal.nc"
+            } else {
+              f = "GWRwSPEC_" + v + "_NA_" + y + "01_" + y + "12-wrtSPECtotal.nc"
+            };
+          };
           f = inputs.downloads.location + '/' + f;
           return {
             netcdf_file: {

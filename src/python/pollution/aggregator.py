@@ -78,7 +78,20 @@ class Aggregator:
             if v.lower() == self.variable.lower():
                 self.variable = v
                 return
-        raise ValueError("Variable {} not found in NetCDF file {}".format(self.variable, self.infile))
+        # Turns out, those variables ending with 'p' are percentages and needed
+        # to be combined with actual values. Hence, we do not want to do it.
+        #
+        # if self.variable.endswith('p'):
+        #     v1 = self.variable[:-1].lower()
+        #     for v in variables:
+        #         if v.lower() == v1:
+        #             self.variable = v
+        #             return
+        vvv = [v for v in variables if v.lower() not in ['lat','lon']]
+        raise ValueError(
+            "Variable {} not found in NetCDF file {}. Available variables: {}"
+            .format(self.variable, self.infile, ','.join(vvv))
+        )
 
     def write_header(self):
         with fopen(self.outfile, "wt") as out:
