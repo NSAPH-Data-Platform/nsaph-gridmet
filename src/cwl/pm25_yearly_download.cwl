@@ -1,5 +1,5 @@
 #!/usr/bin/env cwl-runner
-### Pipeline to ingest Pollution downloaded from WashU Box
+### Pipeline to to aggregate data in NetCDF format over given geographies
 #  Copyright (c) 2021-2022. Harvard University
 #
 #  Developed by Research Software Engineering,
@@ -33,7 +33,9 @@ requirements:
 doc: |
   Workflow to aggregate pollution data coming in NetCDF format
   over given geographies (zip codes or counties) and output as 
-  CSV files
+  CSV files. This is a wrapper around actual aggregation of
+  one file allowing to scatter (parallelize) the aggregation
+  over years.
 
 inputs:
   proxy:
