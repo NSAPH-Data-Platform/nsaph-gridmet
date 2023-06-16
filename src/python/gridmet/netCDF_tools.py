@@ -119,6 +119,8 @@ class NetCDFDataset:
         # Get the absolute values of the specified variable
         self.abs_values = self.dataset.variables[var][:]
 
+        # Assign the units from the old dataset to the new dataset
+        self.dataset.variables[var].units = datasett.variables[var].units
         self.absolute_values_read = True
         self.main_var = var 
         print("Done with read_abs_values")
@@ -153,8 +155,6 @@ class NetCDFDataset:
         new_dataset = Dataset(filename)
         print(new_dataset.variables.keys())
         print(list(new_dataset.variables.keys()))
-        print("atas bisa kok bawah engga")
-        
         
         # If var is None, check that there is only one variable present beside "lat" and "lon"
         if var is None:
@@ -169,7 +169,6 @@ class NetCDFDataset:
             print("this is var of the components: ", var)
             
             print(self.components_list)
-            print("atas self components list")
             self.components_list.append(var)
             print("Dimension:")
             print(new_dataset[var].shape)
@@ -185,8 +184,9 @@ class NetCDFDataset:
 
         # Add the component data to the dataset
         component_out[:] = new_dataset.variables[var][:]
+        # Add units to the variable
+        component_out.units = "ug/m3"
         print(self.dataset)
-        print("dataset now di atas")
         print("done add components")
 
 
@@ -238,8 +238,10 @@ class NetCDFDataset:
             modified_values = self.dataset.variables[component][:] * self.dataset.variables['PM25'][:] / 100
 
             # Create a new variable in the output dataset for the modified values
-            modified_variable = self.dataset.createVariable(f'{component}_mod', 'f4', ('LAT', 'LON'))
+            modified_variable = self.dataset.createVariable(f'{component}_abs', 'f4', ('LAT', 'LON'))
             modified_variable[:] = modified_values[:]
+            # Add units to the variable
+            modified_variable.units = "ug/m3"
         print("This is the dataset after compute abs values: ")
         print(self.dataset)
         return
@@ -275,7 +277,7 @@ class NetCDFDataset:
 
 def main(infile: str, components: List[str], outfile):
     ds = NetCDFDataset()
-    print("testing")
+    #print("testing")
     ds.read_abs_values(infile, outfile)
     print(ds)
     ds.add_components(components)
@@ -303,6 +305,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     main(args.input, args.components, args.output)
-
-
 
