@@ -29,6 +29,8 @@ https://docs.xarray.dev/en/stable/api.html
 """
 import argparse
 import logging
+import os.path
+import sys
 from typing import Optional, List
 
 from netCDF4 import Dataset
@@ -55,26 +57,26 @@ class NetCDFDataset:
         return
     
     def create_new_dataset(self, datasett, outfile): 
-        print("create_new_dataset: Create new netcdf file with name: ", outfile)
+        logging.info("create_new_dataset: Create new netcdf file with name: " + outfile)
         # Create a new netCDF file (need to create new file to not modify the absolute file)
         # Output file
         dsout = Dataset(outfile, "w", format="NETCDF4_CLASSIC")
 
         # Copy dimensions
         for dname, the_dim in datasett.dimensions.items():
-            print(dname, len(the_dim))
+            logging.debug(dname + ": " + str(len(the_dim)))
             dsout.createDimension(dname, len(the_dim) if not the_dim.isunlimited() else None)
 
         # Copy variables
         for v_name, varin in datasett.variables.items():
             outVar = dsout.createVariable(v_name, varin.datatype, varin.dimensions)
-            print(varin.datatype)
+            logging.debug(str(v_name) + ": " + str(varin.datatype))
 
             # Copy variable attributes
             outVar.setncatts({k: varin.getncattr(k) for k in varin.ncattrs()})
 
             outVar[:] = varin[:]
-        print("finish creating new netcdf file")
+        logging.debug("finish creating new netcdf file")
         return dsout
 
         
@@ -123,7 +125,7 @@ class NetCDFDataset:
         self.dataset.variables[var].units = datasett.variables[var].units
         self.absolute_values_read = True
         self.main_var = var 
-        print("Done with read_abs_values")
+        logging.info("Done with read_abs_values")
         return var
 
     def add_component(self, filename: str, var: str = None, abs_var: str = None):
@@ -153,9 +155,8 @@ class NetCDFDataset:
 
         # Read the NetCDF dataset from the file
         new_dataset = Dataset(filename)
-        print(new_dataset.variables.keys())
-        print(list(new_dataset.variables.keys()))
-        
+        logging.info("New dataset variables: " + str(new_dataset.variables.keys()))
+
         # If var is None, check that there is only one variable present beside "lat" and "lon"
         if var is None:
             variables = list(new_dataset.variables.keys())
@@ -166,13 +167,12 @@ class NetCDFDataset:
 
             # Get the variable name
             var = variables[0]
-            print("this is var of the components: ", var)
+            logging.debug("These are the variables of the components: " + var)
             
-            print(self.components_list)
+            logging.debug(str(self.components_list))
             self.components_list.append(var)
-            print("Dimension:")
-            print(new_dataset[var].shape)
-        
+            logging.debug("Shape: " + str(new_dataset[var].shape))
+
         
         # Check if the grid of the component file is compatible with the grid of the existing Dataset
         if new_dataset[var].shape != self.dataset[self.main_var].shape:
@@ -186,10 +186,8 @@ class NetCDFDataset:
         component_out[:] = new_dataset.variables[var][:]
         # Add units to the variable
         component_out.units = "ug/m3"
-        print(self.dataset)
-        print("done add components")
-
-
+        logging.debug(str(self.dataset))
+        logging.info("All components have been added")
         return
 
     def add_components(self, filenames: List[str]):
@@ -212,12 +210,11 @@ class NetCDFDataset:
 
         for filename in filenames:
             # Read the NetCDF dataset from the file
-            print("filename: ", filename)
+            logging.info("Adding components from: " + filename)
             self.add_component(filename)
 
-
-        print("this is dataset now after add_components:")
-        print(self.dataset)
+        logging.debug("This is the dataset after adding components:")
+        logging.debug(str(self.dataset))
              
         return
 
@@ -242,8 +239,8 @@ class NetCDFDataset:
             modified_variable[:] = modified_values[:]
             # Add units to the variable
             modified_variable.units = "ug/m3"
-        print("This is the dataset after compute abs values: ")
-        print(self.dataset)
+        logging.info("Final dataset: ")
+        logging.info(str(self.dataset))
         return
     
     def get_dataset(self) -> Dataset:
@@ -275,15 +272,19 @@ class NetCDFDataset:
         return str_repr
 
 
-def main(infile: str, components: List[str], outfile):
+def main(infile: str, components: List[str], outfile: str):
+    if outfile is None:
+        base, ext = os.path.splitext(infile)
+        base += "_with_components"
+        outfile = base + ext
     ds = NetCDFDataset()
     #print("testing")
     ds.read_abs_values(infile, outfile)
-    print(ds)
+    logging.debug(str(ds))
     ds.add_components(components)
-    print(ds)
+    logging.debug(str(ds))
     ds.compute_abs_values()
-    print(ds)
+    logging.debug(str(ds))
 
 
 if __name__ == '__main__':
@@ -302,7 +303,18 @@ if __name__ == '__main__':
                         help="Path to the file with the combined dataset",
                         default=None,
                         required=False)
+    parser.add_argument("--verbose", "-v",
+                        help="Verbosity level",
+                        default=1,
+                        type=int)
 
     args = parser.parse_args()
+    if args.verbose == 0:
+        logging.basicConfig(level=logging.WARNING, stream=sys.stdout)
+    elif args.verbose == 1:
+        logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    else:
+        logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
+
     main(args.input, args.components, args.output)
 
