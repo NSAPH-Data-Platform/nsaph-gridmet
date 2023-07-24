@@ -30,10 +30,18 @@ https://docs.xarray.dev/en/stable/api.html
 import argparse
 import logging
 import os.path
+import shutil
 import sys
+import tempfile
 from typing import Optional, List
 
+import h5py
+import rasterio
+import rioxarray
+import rioxarray
+import xarray
 from netCDF4 import Dataset
+
 
 #from nsaph import init_logging
 
@@ -45,6 +53,9 @@ class NetCDFDataset:
     """
     def __init__(self):
         self.dataset: Optional[Dataset] = None
+        '''NetCDF Dataset that we will be modifying'''
+        self.rio_dataset = None
+        '''Rasterio dataset that holds metadata lost when writing NetCDF dataset'''
         self.main_var: Optional[str] = None
         '''The name of the main variable'''
         self.components_list = [] 
@@ -52,35 +63,19 @@ class NetCDFDataset:
         '''The names of the component variables containing percentages'''
         self.abs_values: List[str] = []
         '''The names of the component variables containing absolute values'''
-        self.absolute_values_read = False 
+        self.absolute_values_read = False
+        self.temp_output = None
         
         return
     
-    def create_new_dataset(self, datasett, outfile): 
-        logging.info("create_new_dataset: Create new netcdf file with name: " + outfile)
-        # Create a new netCDF file (need to create new file to not modify the absolute file)
-        # Output file
-        dsout = Dataset(outfile, "w", format="NETCDF4_CLASSIC")
+    def open_original_dataset(self, infile):
+        _, self.temp_output = tempfile.mkstemp()
+        shutil.copyfile(infile, self.temp_output)
+        self.dataset = Dataset(self.temp_output, mode='r+')
+        self.rio_dataset = rasterio.open(infile)
+        return
 
-        # Copy dimensions
-        for dname, the_dim in datasett.dimensions.items():
-            logging.debug(dname + ": " + str(len(the_dim)))
-            dsout.createDimension(dname, len(the_dim) if not the_dim.isunlimited() else None)
-
-        # Copy variables
-        for v_name, varin in datasett.variables.items():
-            outVar = dsout.createVariable(v_name, varin.datatype, varin.dimensions)
-            logging.debug(str(v_name) + ": " + str(varin.datatype))
-
-            # Copy variable attributes
-            outVar.setncatts({k: varin.getncattr(k) for k in varin.ncattrs()})
-
-            outVar[:] = varin[:]
-        logging.debug("finish creating new netcdf file")
-        return dsout
-
-        
-    def read_abs_values(self, filename: str, outfile, var: str = None):
+    def read_abs_values(self, filename: str, var: str = None):
         """
         Reads the NetCDF dataset from a *.nc file
         Assumes that this dataset contains absolute values of
@@ -112,7 +107,7 @@ class NetCDFDataset:
             var = variables[0]
             
         # Create new netcdf file  
-        self.dataset = self.create_new_dataset(datasett,outfile)
+        self.open_original_dataset(filename)
         
         # Check that the specified variable is present in the dataset
         if var not in self.dataset.variables:
@@ -246,16 +241,26 @@ class NetCDFDataset:
     def get_dataset(self) -> Dataset:
         return self.dataset
 
-    def write_dataset(self, filename):
+    def close (self, output_file_name):
         """
-        Creates a new file, saving the current state of the dataset
+        Writes all the data to the output file and closes all temporary objects
 
-        :param filename: NetCDF DataFrame from the processing part
         :return: None
         """
         # Save the current state of the dataset to a new file
-        self.dataset.to_netcdf(filename)
 
+        self.dataset.sync()
+        with xarray.open_dataset(self.temp_output) as rds:
+            rds.rio.write_crs(4326, inplace=True)
+            rds.rio.write_transform(self.rio_dataset.transform, inplace=True)
+            rds.rio.to_raster(output_file_name)
+
+        self.rio_dataset.close()
+        self.dataset.close()
+        os.remove(self.temp_output)
+        self.temp_output = None
+        self.rio_dataset = None
+        self.dataset = None
         return
 
     def __str__(self):
@@ -276,15 +281,16 @@ def main(infile: str, components: List[str], outfile: str):
     if outfile is None:
         base, ext = os.path.splitext(infile)
         base += "_with_components"
-        outfile = base + ext
+        outfile = base + '.tif'
     ds = NetCDFDataset()
     #print("testing")
-    ds.read_abs_values(infile, outfile)
+    ds.read_abs_values(infile)
     logging.debug(str(ds))
     ds.add_components(components)
     logging.debug(str(ds))
     ds.compute_abs_values()
     logging.debug(str(ds))
+    ds.close(outfile)
 
 
 if __name__ == '__main__':

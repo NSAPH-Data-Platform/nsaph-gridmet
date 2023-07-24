@@ -51,7 +51,7 @@ from typing import List
 
 from nsaph import init_logging
 
-from gridmet.config import GridmetContext
+from gridmet.config import GridMETContext
 from gridmet.task import GridmetTask
 
 
@@ -62,7 +62,7 @@ class Gridmet:
     The pipeline consists of the collection of Task Objects
     """
 
-    def __init__(self, context: GridmetContext = None):
+    def __init__(self, context: GridMETContext = None):
         """
         Creates a new instance
 
@@ -72,7 +72,7 @@ class Gridmet:
 
         init_logging(name="gridMET-Download", level=logging.INFO)
         if not context:
-            context = GridmetContext(__doc__).instantiate()
+            context = GridMETContext(__doc__).instantiate()
         self.context = context
         self.tasks = self.collect_tasks()
 
