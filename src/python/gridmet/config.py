@@ -210,6 +210,11 @@ class GridContext(Context):
                               default="",
                               help="Columns with constant values to be added to the output file"
     )
+    _statistics = Argument("statistics",
+                           cardinality=Cardinality.single,
+                           default="mean",
+                           help="Type of statistics"
+                           )
     _dates = Argument("dates",
                       help="Filter dates - for debugging purposes only",
                       required=False)
@@ -270,6 +275,8 @@ class GridContext(Context):
         '''Columns with constant values to be added to the output file'''
         self.dates: Optional[DateFilter] = None
         '''Filter on dates - for debugging purposes only'''
+        self.statistics = None
+        '''Type of statistics'''
 
         if subclass is None:
             super().__init__(GridContext, doc, include_default = True)

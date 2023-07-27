@@ -36,8 +36,8 @@ import tempfile
 from typing import Optional, List
 
 import h5py
+import numpy
 import rasterio
-import rioxarray
 import rioxarray
 import xarray
 from netCDF4 import Dataset
@@ -93,22 +93,24 @@ class NetCDFDataset:
             is not None and is not present in teh dataset
         """
         # Create a Dataset variable for the file
-        datasett = Dataset(filename)
+
+        # Create new netcdf file
+        self.open_original_dataset(filename)
 
         # If var is None, check that there is only one variable present beside "lat" and "lon"
         if var is None:
-            variables = list(datasett.variables.keys())
+            variables = list(self.dataset.variables.keys())
             variables.remove("LAT")
             variables.remove("LON")
             if len(variables) != 1:
-                raise ValueError("If var is None, there must be exactly one variable besides 'lat' and 'lon'.")
+                raise ValueError(
+                    "If var is None, there must be exactly one "
+                    "variable besides 'lat' and 'lon'."
+                )
 
             # Get the variable name
             var = variables[0]
-            
-        # Create new netcdf file  
-        self.open_original_dataset(filename)
-        
+
         # Check that the specified variable is present in the dataset
         if var not in self.dataset.variables:
             raise ValueError("The variable '%s' is not present in the dataset." % var)
@@ -117,7 +119,7 @@ class NetCDFDataset:
         self.abs_values = self.dataset.variables[var][:]
 
         # Assign the units from the old dataset to the new dataset
-        self.dataset.variables[var].units = datasett.variables[var].units
+        self.dataset.variables[var].units = self.dataset.variables[var].units
         self.absolute_values_read = True
         self.main_var = var 
         logging.info("Done with read_abs_values")
@@ -227,7 +229,11 @@ class NetCDFDataset:
 
         for component in self.components_list:
             # Compute the absolute values for the component
-            modified_values = self.dataset.variables[component][:] * self.dataset.variables['PM25'][:] / 100
+            component_array = self.dataset.variables[component][:]
+            component_array = numpy.nan_to_num(
+                component_array, copy=True, nan=0, posinf=0, neginf=0
+            )
+            modified_values = component_array * self.dataset.variables[self.main_var][:] / 100
 
             # Create a new variable in the output dataset for the modified values
             modified_variable = self.dataset.createVariable(f'{component}_abs', 'f4', ('LAT', 'LON'))
@@ -251,6 +257,9 @@ class NetCDFDataset:
 
         self.dataset.sync()
         with xarray.open_dataset(self.temp_output) as rds:
+            for var in rds.variables:
+                if str(var).endswith("abs"):
+                    rds[var] = rds[var].where(rds[var] < 1000)
             rds.rio.write_crs(4326, inplace=True)
             rds.rio.write_transform(self.rio_dataset.transform, inplace=True)
             rds.rio.to_raster(output_file_name)

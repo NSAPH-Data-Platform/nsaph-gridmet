@@ -37,6 +37,8 @@ setup(
         'rasterstats',
         'rasterio >= 1.1.0',
         'requests',
+        'rioxarray',
+        'xarray',
         'nsaph_gis>=0.0.3',
     ],
     package_data={

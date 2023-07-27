@@ -1,12 +1,14 @@
 import logging
 import os
 import re
+import warnings
 from typing import Optional
 
 from nsaph import init_logging
+from nsaph_gis.compute_shape import StatsCounter
 
 from gridmet.config import GridContext
-from gridmet.aggregator import Aggregator
+from gridmet.aggregator import Aggregator, GeoTiffAggregator, NetCDFAggregator
 
 """
 An entry point to a command line utility aggregating grid data
@@ -30,6 +32,7 @@ class NetCDFFile:
         if not context:
             context = GridContext(doc=__doc__).instantiate()
         self.context = context
+        self.file_type = None
         log = os.path.basename(self.context.raw_downloads).split('.')[0]
         init_logging(
             name="aggr-" + log,
@@ -38,6 +41,7 @@ class NetCDFFile:
         self.aggregator: Optional[Aggregator] = None
         self.infile = self.context.raw_downloads
         self.extra_columns = None
+        StatsCounter.statistics = context.statistics
         return
 
     def on_prepare(self):
@@ -49,7 +53,13 @@ class NetCDFFile:
         pass
 
     def prepare(self):
-        if not self.infile.endswith(".nc") and not self.infile.endswith(".tif"):
+        if self.infile.endswith(".nc"):
+            self.file_type = "nc"
+            aggregator = NetCDFAggregator
+        elif self.infile.endswith(".tif") or self.infile.endswith(".tiff"):
+            self.file_type = 'tiff'
+            aggregator = GeoTiffAggregator
+        else:
             raise ValueError("NetCDF file is expected (extension .nc)")
         self.on_prepare()
         of, _ = os.path.splitext(os.path.basename(self.infile))
@@ -66,11 +76,11 @@ class NetCDFFile:
                              "len(self.context.shape_files)={:d}"
                              .format(len(self.context.shape_files)))
         shape_file = self.context.shape_files[0]
-        if len(self.context.variables) == 1:
-            variable = self.context.variables[0]
+        if len(self.context.variables) > 0:
+            variable = self.context.variables
         else:
-            raise ValueError("Exactly one variable is required")
-        self.aggregator = Aggregator(
+            raise ValueError("No variables are specified")
+        self.aggregator = aggregator(
             infile=self.infile,
             variable=variable,
             outfile=of,
@@ -82,6 +92,7 @@ class NetCDFFile:
         return
 
     def execute(self):
+        # warnings.simplefilter("error")
         if os.path.isfile(self.infile):
             self.aggregator.execute()
             print(
