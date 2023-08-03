@@ -20,7 +20,12 @@
 
 
 """
-See:
+  Given a NetCDF file with absolute values (e.g., for PM25) and a set of
+  NetCDF files containing percentage values for individual components,
+  this tool consolidates all data into a single NetCDF file with both
+  percentages and absolute values for all components.
+
+See also:
 
 https://unidata.github.io/netcdf4-python/
 https://neetinayak.medium.com/combine-many-netcdf-files-into-a-single-file-with-python-469ba476fc14
@@ -35,7 +40,6 @@ import sys
 import tempfile
 from typing import Optional, List
 
-import h5py
 import numpy
 import rasterio
 import rioxarray
@@ -119,13 +123,16 @@ class NetCDFDataset:
         self.abs_values = self.dataset.variables[var][:]
 
         # Assign the units from the old dataset to the new dataset
-        self.dataset.variables[var].units = self.dataset.variables[var].units
         self.absolute_values_read = True
         self.main_var = var 
         logging.info("Done with read_abs_values")
         return var
 
-    def add_component(self, filename: str, var: str = None, abs_var: str = None):
+    @classmethod
+    def pct_var(cls, var: str) -> str:
+        return var + 'p'
+
+    def add_component(self, filename: str, var: str = None):
         """
         Reads the NetCDF dataset from a *.nc file
         Assumes that this dataset contains percentage of a component defined by
@@ -151,12 +158,12 @@ class NetCDFDataset:
             raise ValueError("The absolute values have not been read yet.")
 
         # Read the NetCDF dataset from the file
-        new_dataset = Dataset(filename)
-        logging.info("New dataset variables: " + str(new_dataset.variables.keys()))
+        component_pct_dataset = Dataset(filename)
+        logging.info("New dataset variables: " + str(component_pct_dataset.variables.keys()))
 
         # If var is None, check that there is only one variable present beside "lat" and "lon"
         if var is None:
-            variables = list(new_dataset.variables.keys())
+            variables = list(component_pct_dataset.variables.keys())
             variables.remove("LAT")
             variables.remove("LON")
             if len(variables) != 1:
@@ -168,21 +175,23 @@ class NetCDFDataset:
             
             logging.debug(str(self.components_list))
             self.components_list.append(var)
-            logging.debug("Shape: " + str(new_dataset[var].shape))
+            logging.debug("Shape: " + str(component_pct_dataset[var].shape))
 
         
         # Check if the grid of the component file is compatible with the grid of the existing Dataset
-        if new_dataset[var].shape != self.dataset[self.main_var].shape:
+        if component_pct_dataset[var].shape != self.dataset[self.main_var].shape:
             raise ValueError("The grid of the component file is incompatible with the grid of the existing Dataset.")
 
         
         # Create a new variable in the dataset to store the component data
-        component_out = self.dataset.createVariable(var, 'f4', new_dataset[var].dimensions)
+        component_out = self.dataset.createVariable(
+            self.pct_var(var), 'f4', component_pct_dataset[var].dimensions
+        )
 
         # Add the component data to the dataset
-        component_out[:] = new_dataset.variables[var][:]
+        component_out[:] = component_pct_dataset.variables[var][:]
         # Add units to the variable
-        component_out.units = "ug/m3"
+        component_out.units = self.dataset.variables[self.main_var].units
         logging.debug(str(self.dataset))
         logging.info("All components have been added")
         return
@@ -229,14 +238,16 @@ class NetCDFDataset:
 
         for component in self.components_list:
             # Compute the absolute values for the component
-            component_array = self.dataset.variables[component][:]
+            component_array = self.dataset.variables[self.pct_var(component)][:]
             component_array = numpy.nan_to_num(
                 component_array, copy=True, nan=0, posinf=0, neginf=0
             )
             modified_values = component_array * self.dataset.variables[self.main_var][:] / 100
 
             # Create a new variable in the output dataset for the modified values
-            modified_variable = self.dataset.createVariable(f'{component}_abs', 'f4', ('LAT', 'LON'))
+            modified_variable = self.dataset.createVariable(
+                component, 'f4', ('LAT', 'LON')
+            )
             modified_variable[:] = modified_values[:]
             # Add units to the variable
             modified_variable.units = "ug/m3"
@@ -258,7 +269,7 @@ class NetCDFDataset:
         self.dataset.sync()
         with xarray.open_dataset(self.temp_output) as rds:
             for var in rds.variables:
-                if str(var).endswith("abs"):
+                if var in self.components_list:
                     rds[var] = rds[var].where(rds[var] < 1000)
             rds.rio.write_crs(4326, inplace=True)
             rds.rio.write_transform(self.rio_dataset.transform, inplace=True)
@@ -270,6 +281,7 @@ class NetCDFDataset:
         self.temp_output = None
         self.rio_dataset = None
         self.dataset = None
+        logging.info("Created: " + output_file_name)
         return
 
     def __str__(self):
@@ -288,9 +300,14 @@ class NetCDFDataset:
 
 def main(infile: str, components: List[str], outfile: str):
     if outfile is None:
-        base, ext = os.path.splitext(infile)
+        base, _ = os.path.splitext(infile)
         base += "_with_components"
         outfile = base + '.tif'
+    elif os.path.isdir(outfile):
+        basename = os.path.basename(infile)
+        base, _ = os.path.splitext(basename)
+        basename = base + '.tif'
+        outfile = os.path.join(outfile, basename)
     ds = NetCDFDataset()
     #print("testing")
     ds.read_abs_values(infile)

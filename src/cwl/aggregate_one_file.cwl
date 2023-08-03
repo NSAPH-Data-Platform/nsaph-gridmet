@@ -47,7 +47,7 @@ inputs:
   geography:
     type: string
   band:
-    type: string
+    type: string[]
   year:
     type: int
   strategy:
@@ -96,9 +96,9 @@ steps:
           } else {
             v = inputs.band;
             if (y == '2017') {
-              f = "GWRwSPEC.HEI_" + v + "_NA_" + y + "01_" + y + "12-wrtSPECtotal.nc"
+              f = "GWRwSPEC.HEI_" + v + "p_NA_" + y + "01_" + y + "12-wrtSPECtotal.nc"
             } else {
-              f = "GWRwSPEC_" + v + "_NA_" + y + "01_" + y + "12-wrtSPECtotal.nc"
+              f = "GWRwSPEC_" + v + "p_NA_" + y + "01_" + y + "12-wrtSPECtotal.nc"
             };
           };
           f = inputs.downloads.location + '/' + f;

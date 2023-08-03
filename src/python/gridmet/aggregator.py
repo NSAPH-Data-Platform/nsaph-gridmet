@@ -232,6 +232,8 @@ class GeoTiffAggregator(Aggregator):
 
     def get_layer(self, var):
         logging.info("Extracting layer: " + var)
+        if var not in self.dataset.descriptions:
+            raise ValueError(f'Variable {var} is not in the dataset')
         idx = self.dataset.descriptions.index(var)
         return self.downscale(self.array[idx])
 

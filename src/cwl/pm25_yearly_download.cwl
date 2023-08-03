@@ -1,5 +1,5 @@
 #!/usr/bin/env cwl-runner
-### Pipeline to to aggregate data in NetCDF format over given geographies
+### Pipeline to aggregate data in NetCDF format over given geographies
 #  Copyright (c) 2021-2022. Harvard University
 #
 #  Developed by Research Software Engineering,
@@ -54,8 +54,8 @@ inputs:
     type: int[]
     default: [2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018]
   band:
-    type: string
-    default: pm25
+    type: string[]
+    default: [PM25, BC, NH4, NIT, OM, SO4, SOIL, SS]
   strategy:
     type: string
     default: downscale
