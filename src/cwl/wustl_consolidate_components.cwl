@@ -37,9 +37,9 @@ doc: |
   percentages and absolute values for all components.
 
 inputs:
-  netcdf_data:
-    type: File
-    doc: "Path to downloaded file"
+  abs_values:
+    type: File[]
+    doc: "Path to downloaded file with absolute values"
     inputBinding:
       prefix: --input
   components:
@@ -61,12 +61,12 @@ outputs:
     type: File
     outputBinding:
       glob:
-        - "*.nc"
-        - "**/*.nc"
+        - "*.tif*"
+        - "**/*.tif*"
     doc: |
       The output NetCDF file, containing absolute values for the given
       components
   errors:
     type: stderr
 
-stderr: $("consolidate-" + inputs.netcdf_data.nameroot + ".err")
+stderr: $("consolidate-" + inputs.abs_values.nameroot + ".err")

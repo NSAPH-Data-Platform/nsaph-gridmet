@@ -52,10 +52,13 @@ inputs:
       Valid values: "zip", "zcta" or "county"
   years:
     type: int[]
-    default: [2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018]
-  band:
+    default: [2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017]
+  variable:
+    type: string
+    default:  PM25
+  component:
     type: string[]
-    default: [PM25, BC, NH4, NIT, OM, SO4, SOIL, SS]
+    default: [BC, NH4, NIT, OM, SO4, SOIL, SS]
   strategy:
     type: string
     default: downscale
@@ -79,20 +82,25 @@ steps:
       geography: geography
       shape_file_collection: shape_file_collection
       year: years
-      band: band
+      variable: variable
+      component: component
       strategy: strategy
     out:
       - shapes
       - aggregate_data
+      - consolidated_data
       - aggregate_log
       - aggregate_err
 
 
 
 outputs:
-  data:
+  aggregate_data:
     type: File[]
     outputSource: process/aggregate_data
+  consolidated_data:
+    type: File[]
+    outputSource: process/consolidated_data
   shapes:
     type:
       type: array
