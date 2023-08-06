@@ -27,7 +27,7 @@ requirements:
   InlineJavascriptRequirement: {}
   ResourceRequirement:
     # coresMin: 1
-    coresMax: 4
+    coresMax: 6
 
 
 doc: |
@@ -47,7 +47,6 @@ inputs:
       prefix: --shapes_dir
   band:
     type: string[]
-    default: pm25
     inputBinding:
       prefix: --var
   geography:
