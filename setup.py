@@ -39,7 +39,8 @@ setup(
         'requests',
         'rioxarray',
         'xarray',
-        'nsaph_gis>=0.0.3',
+        'nsaph @ git+https://github.com/NSAPH-Data-Platform/nsaph-core-platform.git@develop',
+        'nsaph_gis @ git+https://github.com/NSAPH-Data-Platform/nsaph-gis.git@develop'
     ],
     package_data={
         '': ["**/*.yaml"]
