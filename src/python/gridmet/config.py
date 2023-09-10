@@ -308,11 +308,12 @@ class GridMETContext(GridContext):
     a correct gridMET band is provided
     """
 
-    _variables = Argument("variables",
-                          help="Gridmet bands or variables",
-                          aliases=["var"],
-                          cardinality=Cardinality.multiple,
-                          valid_values=[v.value for v in GridmetVariable])
+    # _variables = Argument("variables",
+    #                       help="Gridmet bands or variables",
+    #                       aliases=["var"],
+    #                       cardinality=Cardinality.multiple,
+    #                       valid_values=[v.value for v in GridmetVariable])
+    GridContext._variables.valid_values=[v.value for v in GridmetVariable]
 
     def __init__(self, doc = None):
         super().__init__(GridMETContext, doc)
@@ -321,3 +322,4 @@ class GridMETContext(GridContext):
         value = super().validate(attr, value)
         if attr == self._variables.name:
             return [GridmetVariable(v) for v in value]
+        return value
