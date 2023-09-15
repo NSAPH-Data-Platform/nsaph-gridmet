@@ -33,6 +33,8 @@ from typing import List, Tuple, Set, Any
 import rasterio
 from netCDF4 import Dataset
 from nsaph import init_logging
+from nsaph.pg_keywords import PG_NUMERIC_TYPE, PG_DATE_TYPE, PG_STR_TYPE, \
+    PG_INT_TYPE
 from nsaph_gis.compute_shape import StatsCounter
 from nsaph_gis.constants import RasterizationStrategy, Geography
 from nsaph_utils.utils.io_utils import fopen, CSVWriter, Collector
@@ -104,15 +106,68 @@ class Aggregator(ABC):
     def get_layer(self, var):
         pass
 
+    def get_header(self) -> List[str]:
+        key = str(self.geography.value).lower()
+        headers = self.aggr_variables + [key]
+        if self.extra_headers:
+            headers += self.extra_headers
+        return headers
+
     def write_header(self):
         with fopen(self.outfile, "wt") as out:
             writer = CSVWriter(out)
-            key = self.geography.value.lower()
-            headers = self.aggr_variables + [key]
-            if self.extra_headers:
-                headers += self.extra_headers
+            headers = self.get_header()
             writer.writerow(headers)
         return self.outfile
+
+    def get_registry(self, domain_name: str, table_name: str):
+        key = str(self.geography.value).lower()
+        domain = {
+            domain_name: {
+                "schema": domain_name,
+                "index": "all",
+                "description": "NSAPH data model for gridMET",
+                "header": True,
+                "quoting": 3,
+                "tables": {
+                }
+            }
+        }
+        columns = [
+            {var: {
+                "type": PG_NUMERIC_TYPE
+            }} for var in self.aggr_variables
+        ]
+        columns.append({key: {
+            "type": PG_STR_TYPE,
+            "index": True
+        }})
+        pk = None
+        if self.extra_headers:
+            for i in range(len(self.extra_headers)):
+                c = self.extra_headers[i]
+                v = self.extra_values[i]
+                if isinstance(i, int):
+                    t = PG_INT_TYPE
+                else:
+                    t = PG_STR_TYPE
+                columns.append({c: {
+                    "type": t,
+                    "index": True
+                }})
+                if c.lower() == "year":
+                    pk = [key, c]
+
+        table = {
+            "columns": columns
+        }
+        if pk is not None:
+            table["primary_key"] = pk
+
+        domain[domain_name]["tables"][table_name] = table
+
+        return domain
+
 
     def execute(self, mode: str = "wt"):
         """
@@ -236,6 +291,7 @@ class GeoTiffAggregator(Aggregator):
             raise ValueError(f'Variable {var} is not in the dataset')
         idx = self.dataset.descriptions.index(var)
         return self.downscale(self.array[idx])
+
 
 if __name__ == '__main__':
     init_logging(level=logging.INFO)

@@ -2,6 +2,8 @@ import logging
 import os
 from typing import Optional
 
+import yaml
+
 from nsaph import init_logging
 from nsaph_gis.compute_shape import StatsCounter
 
@@ -89,6 +91,13 @@ class NetCDFFile:
         )
         return
 
+    def get_domain_name(self):
+        return "pollution"
+
+    def get_table_name(self):
+        of = os.path.basename(self.aggregator.outfile).split('.')
+        return of[0]
+
     def execute(self):
         # warnings.simplefilter("error")
         if os.path.isfile(self.infile):
@@ -103,6 +112,14 @@ class NetCDFFile:
         else:
             of = self.aggregator.write_header()
             print("Input file was not found. Created empty file: {}".format(of))
+        registry = self.aggregator.get_registry(
+            self.get_domain_name(), self.get_table_name()
+        )
+        of = os.path.join(
+            self.context.destination, self.get_domain_name() + ".yaml"
+        )
+        with open (of, "wt") as out:
+            yaml.dump(registry, out)
         return
 
 
