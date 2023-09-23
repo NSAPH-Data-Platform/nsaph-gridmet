@@ -34,7 +34,7 @@ from netCDF4._netCDF4 import Dataset
 from rasterstats.io import Raster
 from tqdm import tqdm
 
-from gridmet.config import GridmetVariable, GridmetContext, Shape
+from gridmet.config import GridmetVariable, GridMETContext, Shape
 from gridmet.gridmet_tools import find_shape_file, get_nkn_url, get_variable, get_days, \
     get_affine_transform, disaggregate
 from nsaph_gis.compute_shape import StatsCounter
@@ -249,7 +249,7 @@ class ComputeShapesTask(ComputeGridmetTask):
         logging.info("%s:%s:%s:%s", str(now), self.geography.value, self.band.value, dt)
 
         for record in StatsCounter.process(self.strategy, self.shapefile, self.affine, layer, self.geography):
-            writer.writerow([record.mean, dt.strftime("%Y-%m-%d"), record.prop])
+            writer.writerow([record.value, dt.strftime("%Y-%m-%d"), record.prop])
         logging.debug("%s: completed in %s", str(datetime.now()), str(datetime.now() - now))
 
 
@@ -420,7 +420,7 @@ class GridmetTask:
     """
 
     @classmethod
-    def destination_file_name(cls, context: GridmetContext,
+    def destination_file_name(cls, context: GridMETContext,
                               year: int,
                               variable: GridmetVariable):
         """
@@ -439,7 +439,7 @@ class GridmetTask:
         return os.path.join(context.destination, f)
 
     @classmethod
-    def find_shape_file(cls, context: GridmetContext, year: int, shape: Shape):
+    def find_shape_file(cls, context: GridMETContext, year: int, shape: Shape):
         """
         Finds shapefile for a given type of geographies for the
         closest available year
@@ -456,7 +456,7 @@ class GridmetTask:
         shape_type = shape.value
         return find_shape_file(parent_dir, year, geo_type, shape_type)
 
-    def __init__(self, context: GridmetContext,
+    def __init__(self, context: GridMETContext,
                  year: int,
                  variable: GridmetVariable):
         """

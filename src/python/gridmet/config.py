@@ -144,27 +144,17 @@ class GridmetVariable(Enum):
     vs = "vs"
     """Wind velocity at 10m: m/s"""
 
-    # PM25 and components
-    pm25 = "pm25"
-    """PM25 exposure data"""
-    BCp = "BCp"
-    NH4p = "NH4p"
-    NITp = "NITp"
-    OMp = "OMp"
-    SO4p = "SO4p"
-    SOILp = "SOILp"
-    SSp = "SSp"
 
+class GridContext(Context):
+    """
+    Defines a configuration object to process aggregations and other tasks
+    over data grids
+    """
 
-class GridmetContext(Context):
-    """
-    Defines a context of a running a gridmet pipeline.
-    """
     _variables = Argument("variables",
                           help="Gridmet bands or variables",
                           aliases=["var"],
-                          cardinality=Cardinality.multiple,
-                          valid_values=[v.value for v in GridmetVariable])
+                          cardinality=Cardinality.multiple)
     _strategy = Argument("strategy",
                          aliases=['s'],
                          default=RasterizationStrategy.default.value,
@@ -214,6 +204,17 @@ class GridmetContext(Context):
                             cardinality=Cardinality.multiple,
                             default="",
                             help="Column names for metadata")
+    _extra_columns = Argument("extra_columns",
+                              aliases=["e", "extra"],
+                              cardinality=Cardinality.multiple,
+                              default="",
+                              help="Columns with constant values to be added to the output file"
+    )
+    _statistics = Argument("statistics",
+                           cardinality=Cardinality.single,
+                           default="mean",
+                           help="Type of statistics"
+                           )
     _dates = Argument("dates",
                       help="Filter dates - for debugging purposes only",
                       required=False)
@@ -223,7 +224,7 @@ class GridmetContext(Context):
                        help="Path to shape files",
                        )
 
-    def __init__(self, doc = None):
+    def __init__(self, subclass = None, doc = None):
         """
         Constructor
         
@@ -270,14 +271,24 @@ class GridmetContext(Context):
         '''Column names for coordinates'''
         self.metadata = None
         '''Column names for metadata'''
+        self.extra_columns = None
+        '''Columns with constant values to be added to the output file'''
         self.dates: Optional[DateFilter] = None
         '''Filter on dates - for debugging purposes only'''
-        super().__init__(GridmetContext, doc)
+        self.statistics = None
+        '''Type of statistics'''
+
+        if subclass is None:
+            super().__init__(GridContext, doc, include_default = True)
+        else:
+            super().__init__(subclass, doc, include_default = True)
+            self._attrs += [
+                attr[1:] for attr in GridContext.__dict__
+                if attr[0] == '_' and attr[1] != '_'
+            ]
 
     def validate(self, attr, value):
         value = super().validate(attr, value)
-        if attr == self._variables.name:
-            return [GridmetVariable(v) for v in value]
         if attr == self._shapes.name:
             return [Shape(v) for v in value]
         if attr == self._geography.name:
@@ -287,4 +298,28 @@ class GridmetContext(Context):
         if attr == self._dates.name:
             if value:
                 return DateFilter(value)
+        return value
+
+
+class GridMETContext(GridContext):
+    """
+    Defines a configuration object to process aggregations and other tasks
+    over data grids containing gridMET data. Includes validation that
+    a correct gridMET band is provided
+    """
+
+    # _variables = Argument("variables",
+    #                       help="Gridmet bands or variables",
+    #                       aliases=["var"],
+    #                       cardinality=Cardinality.multiple,
+    #                       valid_values=[v.value for v in GridmetVariable])
+    GridContext._variables.valid_values=[v.value for v in GridmetVariable]
+
+    def __init__(self, doc = None):
+        super().__init__(GridMETContext, doc)
+
+    def validate(self, attr, value):
+        value = super().validate(attr, value)
+        if attr == self._variables.name:
+            return [GridmetVariable(v) for v in value]
         return value

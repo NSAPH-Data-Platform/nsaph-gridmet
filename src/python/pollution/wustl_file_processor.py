@@ -1,16 +1,12 @@
-import logging
-import os
 import re
-from typing import Optional
 
-from nsaph import init_logging
+from gridmet.netCDF_file_processor import NetCDFFile
 
-from gridmet.config import GridmetContext
-from pollution.aggregator import Aggregator
+from gridmet.config import GridContext
 
 
-class WUSTLFile:
-    def __init__(self, context: GridmetContext = None):
+class WUSTLFile(NetCDFFile):
+    def __init__(self, context: GridContext = None):
         """
         Creates a new instance
 
@@ -18,16 +14,7 @@ class WUSTLFile:
             then it is constructed from the command line arguments
         """
 
-        if not context:
-            context = GridmetContext(__doc__).instantiate()
-        self.context = context
-        log = os.path.basename(self.context.raw_downloads).split('.')[0]
-        init_logging(
-            name="aggr-" + log,
-            level=logging.INFO
-        )
-        self.aggregator: Optional[Aggregator] = None
-        self.infile = self.context.raw_downloads
+        super().__init__(context)
         self.year = None
         self.month = None
         return
@@ -47,59 +34,18 @@ class WUSTLFile:
         raise ValueError("File name: {} does not match expected pattern"
                              .format(self.infile))
 
-    def prepare(self):
-        if not self.infile.endswith(".nc"):
-            raise ValueError("NetCDF file is expected (extension .nc)")
+    def on_prepare(self):
+        if self.extra_columns is not None:
+            raise ValueError("For NetCDF files downloaded from WUSTL, extra columns cannot "
+                             "be provided by user as they are calculated automatically")
         self.parse_file_name()
         if self.year is not None:
             if self.month is not None:
-                extra_columns = ["Year", "Month"], [self.year, self.month]
+                self.extra_columns = ["Year", "Month"], [self.year, self.month]
             else:
-                extra_columns = ["Year"], [self.year]
+                self.extra_columns = ["Year"], [self.year]
         else:
-            extra_columns = None
-        of, _ = os.path.splitext(os.path.basename(self.infile))
-        of += '_' + self.context.geography.value + ".csv"
-        if not os.path.isdir(self.context.destination):
-            os.makedirs(self.context.destination, exist_ok=True)
-        of = os.path.join(self.context.destination, of)
-        if self.context.compress:
-            of += ".gz"
-
-        if len(self.context.shape_files) != 1:
-            raise ValueError("Shape type is required and only one "
-                             "shape type is allowed for aggregation."
-                             "len(self.context.shape_files)={:d}"
-                             .format(len(self.context.shape_files)))
-        shape_file = self.context.shape_files[0]
-        if len(self.context.variables) == 1:
-            variable = self.context.variables[0].value
-        else:
-            raise ValueError("Exactly one variable is required")
-        self.aggregator = Aggregator(
-            infile=self.infile,
-            variable=variable,
-            outfile=of,
-            strategy=self.context.strategy,
-            shapefile=shape_file,
-            geography=self.context.geography,
-            extra_columns=extra_columns
-        )
-        return
-
-    def execute(self):
-        if os.path.isfile(self.infile):
-            self.aggregator.execute()
-            print(
-                "Aggregation of data from {} by {} has been executed. Output: {}"
-                    .format(
-                        self.infile,
-                        self.context.geography.value,
-                        self.aggregator.outfile
-            ))
-        else:
-            of = self.aggregator.write_header()
-            print("Input file was not found. Created empty file: {}".format(of))
+            self.extra_columns = None
         return
 
 

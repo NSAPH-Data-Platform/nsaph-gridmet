@@ -46,8 +46,10 @@ inputs:
     type: Directory
   geography:
     type: string
-  band:
+  variable:
     type: string
+  component:
+    type: string[]
   year:
     type: int
   strategy:
@@ -73,50 +75,38 @@ steps:
     out:
       - shape_files
 
-  findfile:
+  find_pm25_file:
     doc: |
       Given input directory, variable (band), year and month,
-      evaluates the exepected file name for the input data
-    run:
-      class: ExpressionTool
-      inputs:
-        downloads:
-          type: Directory
-        year:
-          type: int
-        band:
-          type: string
-      expression: |
-        ${
-          var v = inputs.band.toUpperCase();
-          var y = String(inputs.year);
-          var f;
-          if (v == 'PM25') {
-            f = "V4NA03_" + v + "_NA_" + y + "01_" + y + "12-RH35.nc";
-          } else {
-            v = inputs.band;
-            if (y == '2017') {
-              f = "GWRwSPEC.HEI_" + v + "_NA_" + y + "01_" + y + "12-wrtSPECtotal.nc"
-            } else {
-              f = "GWRwSPEC_" + v + "_NA_" + y + "01_" + y + "12-wrtSPECtotal.nc"
-            };
-          };
-          f = inputs.downloads.location + '/' + f;
-          return {
-            netcdf_file: {
-              "class": "File",
-              "location": f
-            }
-          };
-        }
-      outputs:
-        netcdf_file:
-          type: File
+      evaluates the expected file name for the main variable input data
+    run:  wustl_file_pattern.cwl
     in:
       year: year
-      band: band
+      variables:
+        valueFrom: $([inputs.variable])
+      variable: variable
       downloads: downloads
-    out: [netcdf_file]
+    out: [netcdf_files]
+
+  find_components_files:
+    doc: |
+      Given input directory, variable (band), year and month,
+      evaluates the expected file name for the main variable input data
+    run:  wustl_file_pattern.cwl
+    in:
+      year: year
+      variables: component
+      downloads: downloads
+    out: [netcdf_files]
+
+  consolidate:
+    doc: consolidate components into one file
+    run: wustl_consolidate_components.cwl
+    in:
+      abs_values: find_pm25_file/netcdf_files
+      components: find_components_files/netcdf_files
+    out:
+      - consolidated_data
 
   aggregate:
     doc: Aggregate data over geographies
@@ -124,9 +114,12 @@ steps:
     in:
       strategy: strategy
       geography: geography
-      netcdf_data: findfile/netcdf_file
+      netcdf_data: consolidate/consolidated_data
       shape_files: get_shapes/shape_files
-      band: band
+      variable: variable
+      components: component
+      band:
+        valueFrom: $([inputs.variable].concat(inputs.components))
     out:
       - log
       - errors
@@ -137,6 +130,9 @@ outputs:
     type: File[]
     outputSource: get_shapes/shape_files
 
+  consolidated_data:
+    type: File
+    outputSource: consolidate/consolidated_data
   aggregate_data:
     type: File
     outputSource: aggregate/csv_data
