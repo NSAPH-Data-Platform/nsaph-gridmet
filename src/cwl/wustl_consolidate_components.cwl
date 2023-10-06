@@ -1,5 +1,5 @@
 #!/usr/bin/env cwl-runner
-### Aggregates data in NetCDF file over given geographies
+###
 #  Copyright (c) 2021. Harvard University
 #
 #  Developed by Research Software Engineering,
@@ -21,71 +21,52 @@
 
 cwlVersion: v1.2
 class: CommandLineTool
-baseCommand: [python, -m, pollution.wustl_file_processor]
+baseCommand: [python, -m, gridmet.netCDF_components_consolidator]
 
 requirements:
   InlineJavascriptRequirement: {}
   ResourceRequirement:
     # coresMin: 1
-    coresMax: 6
+    coresMax: 4
 
 
 doc: |
-  This tool aggregates data in NetCDF file over provided shapes
-  (zip codes or counties). It produces mean values
+  Given a NetCDF file with absolute values (e.g., for PM25) and a set of 
+  NetCDF files containing percentage values for individual components,  
+  this tool consolidates all data into a single NetCDF file with both
+  percentages and absolute values for all components.
 
 inputs:
-  strategy:
-    type: string
-    default: downscale
-    inputBinding:
-      prefix: --strategy
-    doc: "Rasterization strategy"
-  shapes:
-    type: Directory?
-    inputBinding:
-      prefix: --shapes_dir
-  band:
-    type: string[]
-    inputBinding:
-      prefix: --var
-  geography:
-    type: string
-    doc: |
-      Type of geography: zip codes or counties
-    inputBinding:
-      prefix: --geography
-  netcdf_data:
-    type: File
-    doc: "Path to downloaded file"
-    inputBinding:
-      prefix: --raw_downloads
-  shape_files:
+  abs_values:
     type: File[]
-    doc: "Paths to shape files"
+    doc: "Path to downloaded file with absolute values"
     inputBinding:
-      prefix: --shape_files
+      prefix: --input
+  components:
+    type: File[]
+    doc: "Paths to component files"
+    inputBinding:
+      prefix: --components
 
 arguments:
   - valueFrom: "."
-    prefix: --destination
+    prefix: --output
 
 outputs:
   log:
     type: File?
     outputBinding:
       glob: "*.log"
-  csv_data:
+  consolidated_data:
     type: File
     outputBinding:
       glob:
-        - "*.csv*"
-        - "**/*.csv*"
+        - "*.tif*"
+        - "**/*.tif*"
     doc: |
-      The output CSV file, containing mean values of the given
-      variable over given geographies. Each line
-      contains date, geo id (zip or county FIPS) and value
+      The output NetCDF file, containing absolute values for the given
+      components
   errors:
     type: stderr
 
-stderr: $("aggr-" + inputs.netcdf_data.nameroot + ".err")
+stderr: $("consolidate-" + inputs.abs_values.nameroot + ".err")
