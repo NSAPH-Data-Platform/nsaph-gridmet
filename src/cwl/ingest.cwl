@@ -1,5 +1,5 @@
 #!/usr/bin/env cwl-runner
-### Uploader of the gridMET Data to the database
+### Universal uploader of the tabular data to the database
 #  Copyright (c) 2021. Harvard University
 #
 #  Developed by Research Software Engineering,
@@ -27,7 +27,7 @@ requirements:
   InlineJavascriptRequirement: {}
 
 doc: |
-  This tool uploads the data to the database
+  This tool ingests tabular data, usually in CSV format into the database
 
 
 inputs:
@@ -52,6 +52,10 @@ inputs:
     doc: The name of the section in the database.ini file
     inputBinding:
       prefix: --connection
+  domain:
+    type: string
+    inputBinding:
+      prefix: --domain
   input:
     type: File
     inputBinding:
@@ -86,9 +90,6 @@ inputs:
 
 arguments:
     - valueFrom: "--reset"
-    - valueFrom: "gridmet"
-      prefix: --domain
-
 
 outputs:
   log:
