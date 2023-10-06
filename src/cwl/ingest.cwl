@@ -57,7 +57,9 @@ inputs:
     inputBinding:
       prefix: --domain
   input:
-    type: File
+    type:
+      - File
+      - File[]
     inputBinding:
       prefix: --data
     doc: |
