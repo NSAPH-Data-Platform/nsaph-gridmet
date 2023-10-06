@@ -152,6 +152,8 @@ steps:
           doc: Uploads data into the database
           in:
             registry: model
+            domain:
+              valueFrom: "gridmet"
             table: table
             input: process/data
             database: database

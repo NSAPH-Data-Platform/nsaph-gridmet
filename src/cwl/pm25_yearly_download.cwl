@@ -1,5 +1,5 @@
 #!/usr/bin/env cwl-runner
-### Pipeline to to aggregate data in NetCDF format over given geographies
+### Pipeline to aggregate data in NetCDF format over given geographies
 #  Copyright (c) 2021-2022. Harvard University
 #
 #  Developed by Research Software Engineering,

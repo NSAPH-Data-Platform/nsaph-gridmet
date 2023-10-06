@@ -235,6 +235,8 @@ steps:
             connection_name: connection_name
           out: [log, errors]
 
+        # do not need indexing as we define indices in advance
+
         vacuum:
           run: vacuum.cwl
           in:
