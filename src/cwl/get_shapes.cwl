@@ -21,7 +21,7 @@
 
 cwlVersion: v1.2
 class: CommandLineTool
-baseCommand: [python, -m, gridmet.shapes]
+baseCommand: [python, -m, nsaph_gis.shapes_downloader]
 
 requirements:
   ResourceRequirement:
@@ -34,7 +34,7 @@ requirements:
 
 
 doc: |
-  This tool downloads AirNow data from EPA website
+  This tool downloads Shape files from US Census website
 
 inputs:
   proxy:

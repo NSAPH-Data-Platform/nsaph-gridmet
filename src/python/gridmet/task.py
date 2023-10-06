@@ -249,7 +249,7 @@ class ComputeShapesTask(ComputeGridmetTask):
         logging.info("%s:%s:%s:%s", str(now), self.geography.value, self.band.value, dt)
 
         for record in StatsCounter.process(self.strategy, self.shapefile, self.affine, layer, self.geography):
-            writer.writerow([record.mean, dt.strftime("%Y-%m-%d"), record.prop])
+            writer.writerow([record.value, dt.strftime("%Y-%m-%d"), record.prop])
         logging.debug("%s: completed in %s", str(datetime.now()), str(datetime.now() - now))
 
 
