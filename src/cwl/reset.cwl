@@ -38,12 +38,11 @@ inputs:
       A path to the data model file
   domain:
     type: string
-    default: gridmet
     doc: the name of the domain
     inputBinding:
       prefix: --domain
   table:
-    type: string
+    type: string?
     inputBinding:
       prefix: --table
     default: ps
