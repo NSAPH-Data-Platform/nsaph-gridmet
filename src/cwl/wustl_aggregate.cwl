@@ -26,12 +26,13 @@ baseCommand: [python, -m, pollution.wustl_file_processor]
 requirements:
   InlineJavascriptRequirement: {}
   ResourceRequirement:
-    # coresMin: 1
-    coresMax: 6
+    coresMin: 1
+    ramMin: 8192
+    # coresMax: 6
 
 
 doc: |
-  This tool aggregates data in NetCDF file over provided shapes
+  This tool aggregates data in NetCDF or GeoTiff file over provided shapes
   (zip codes or counties). It produces mean values
 
 inputs:
@@ -41,7 +42,7 @@ inputs:
     inputBinding:
       prefix: --strategy
     doc: "Rasterization strategy"
-  shapes:
+  shapes_dir:
     type: Directory?
     inputBinding:
       prefix: --shapes_dir
@@ -61,10 +62,25 @@ inputs:
     inputBinding:
       prefix: --raw_downloads
   shape_files:
-    type: File[]
+    type: File[]?
     doc: "Paths to shape files"
     inputBinding:
       prefix: --shape_files
+  output_type:
+    type: string[]
+    doc: What to output as the result of executing the tool
+    default:
+      - aggregation
+      - data_dictionary
+    inputBinding:
+      prefix: --output
+  table:
+    type: string?
+    doc: |
+      Optional name ot the table where the aggregated data will be
+      eventually stored
+    inputBinding:
+      prefix: --table
 
 arguments:
   - valueFrom: "."
@@ -85,6 +101,15 @@ outputs:
       The output CSV file, containing mean values of the given
       variable over given geographies. Each line
       contains date, geo id (zip or county FIPS) and value
+  data_dictionary:
+    type: File?
+    outputBinding:
+      glob:
+        - "*.yaml"
+        - "**/*.yaml"
+    doc: |
+      Data dictionary for teh aggregated data
+
   errors:
     type: stderr
 

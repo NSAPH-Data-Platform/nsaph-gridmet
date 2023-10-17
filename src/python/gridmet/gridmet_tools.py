@@ -16,7 +16,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-
+import glob
 import os
 from typing import List, Optional
 import rasterio
@@ -61,12 +61,18 @@ def get_nkn_url(variable:str, year:int) -> str:
 def check_shape_file(shapes_dir: str,
                      year: int,
                      geography_type: str,
-                     shape_type: str) -> Optional[str]:
+                     shape_type: str) -> [Optional[str], list]:
     d = os.path.join(shapes_dir, "{:d}".format(year))
     if os.path.isdir(d):
         f = "{}/{}/ESRI{:02d}USZIP5_POLY_WGS84.shp".format(
             geography_type, shape_type,  year - 2000)
         return os.path.join(d, f)
+    tiger_format = "tl_{:04d}_us_{}*.shp"
+    tiger_pattern = tiger_format.format(year, geography_type)
+    tiger_shapes = glob.glob(os.path.join(shapes_dir, tiger_pattern))
+    if tiger_shapes:
+        return tiger_shapes
+
     return None
 
 

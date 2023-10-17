@@ -145,6 +145,15 @@ class GridmetVariable(Enum):
     """Wind velocity at 10m: m/s"""
 
 
+class OutputType(Enum):
+    """
+    Type of teh output that the tool should produce
+    """
+
+    aggregation     = "aggregation"
+    data_dictionary = "data_dictionary"
+
+
 class GridContext(Context):
     """
     Defines a configuration object to process aggregations and other tasks
@@ -223,6 +232,25 @@ class GridContext(Context):
                        default="",
                        help="Path to shape files",
                        )
+    _description = Argument("description",
+                   cardinality=Cardinality.single,
+                   default="Dorieh data model for aggregations of netCDF data",
+                   help="Description to be added to data dictionary"
+                   )
+    _table = Argument("table",
+          help = "Name of the table where the aggregated data will be stored",
+          type = str,
+          required = False,
+          aliases = ["t"],
+          default = None,
+          cardinality = Cardinality.single
+          )
+    _output = Argument("output",
+                       aliases=['o'],
+                       cardinality=Cardinality.multiple,
+                       default=[OutputType.aggregation.value],
+                       help="What the tool should output",
+                       valid_values=[v.value for v in OutputType])
 
     def __init__(self, subclass = None, doc = None):
         """
@@ -277,6 +305,12 @@ class GridContext(Context):
         '''Filter on dates - for debugging purposes only'''
         self.statistics = None
         '''Type of statistics'''
+        self.description = None
+        '''Description to be added to data dictionary'''
+        self.table = None
+        '''Name of the table where the aggregated data will be stored'''
+        self.output = None
+        '''Type of the output the tool should produce'''
 
         if subclass is None:
             super().__init__(GridContext, doc, include_default = True)
@@ -295,6 +329,8 @@ class GridContext(Context):
             return Geography[value]
         if attr == self._strategy.name:
             return RasterizationStrategy[value]
+        if attr == self._output.name:
+            return [OutputType[v] for v in value]
         if attr == self._dates.name:
             if value:
                 return DateFilter(value)

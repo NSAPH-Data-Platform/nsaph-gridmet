@@ -4,10 +4,11 @@ from typing import Optional
 
 import yaml
 
+from gridmet.gridmet_tools import find_shape_file
 from nsaph import init_logging
 from nsaph_gis.compute_shape import StatsCounter
 
-from gridmet.config import GridContext
+from gridmet.config import GridContext, OutputType
 from gridmet.aggregator import Aggregator, GeoTiffAggregator, NetCDFAggregator
 
 """
@@ -52,6 +53,9 @@ class NetCDFFile:
 
         pass
 
+    def get_aggregation_year(self):
+        return self.context.years
+
     def prepare(self):
         if self.infile.endswith(".nc"):
             self.file_type = "nc"
@@ -59,6 +63,9 @@ class NetCDFFile:
         elif self.infile.endswith(".tif") or self.infile.endswith(".tiff"):
             self.file_type = 'tiff'
             aggregator = GeoTiffAggregator
+        elif OutputType.aggregation not in self.context.output:
+            self.file_type = "nc"
+            aggregator = NetCDFAggregator
         else:
             raise ValueError("NetCDF file is expected (extension .nc)")
         self.on_prepare()
@@ -70,6 +77,13 @@ class NetCDFFile:
         if self.context.compress:
             of += ".gz"
 
+        if not self.context.shape_files and self.context.shapes_dir:
+            self.context.shape_files = find_shape_file(
+                self.context.shapes_dir,
+                int(self.get_aggregation_year()),
+                str(self.context.geography.value),
+                "polygon"
+            )
         if len(self.context.shape_files) != 1:
             raise ValueError("Shape type is required and only one "
                              "shape type is allowed for aggregation."
@@ -92,34 +106,42 @@ class NetCDFFile:
         return
 
     def get_domain_name(self):
-        return "pollution"
+        return "exposures"
 
     def get_table_name(self):
+        if self.context.table is not None:
+            return  self.context.table
         of = os.path.basename(self.aggregator.outfile).split('.')
         return of[0]
 
     def execute(self):
-        # warnings.simplefilter("error")
-        if os.path.isfile(self.infile):
-            self.aggregator.execute()
-            print(
-                "Aggregation of data from {} by {} has been executed. Output: {}"
-                    .format(
-                        self.infile,
-                        self.context.geography.value,
-                        self.aggregator.outfile
-            ))
-        else:
-            of = self.aggregator.write_header()
-            print("Input file was not found. Created empty file: {}".format(of))
-        registry = self.aggregator.get_registry(
-            self.get_domain_name(), self.get_table_name()
-        )
-        of = os.path.join(
-            self.context.destination, self.get_domain_name() + ".yaml"
-        )
-        with open (of, "wt") as out:
-            yaml.dump(registry, out)
+        if OutputType.aggregation in self.context.output:
+            if os.path.isfile(self.infile):
+                self.aggregator.execute()
+                print(
+                    "Aggregation of data from {} by {} has been executed. "
+                    "Output: {}"
+                        .format(
+                            self.infile,
+                            self.context.geography.value,
+                            self.aggregator.outfile
+                ))
+            else:
+                of = self.aggregator.write_header()
+                logging.info("Input file was not found. Created empty file: {}"
+                             .format(os.path.abspath(of)))
+        if OutputType.data_dictionary in self.context.output:
+            registry = self.aggregator.get_registry(
+            self.get_domain_name(),
+            self.get_table_name(),
+            description=self.context.description
+            )
+            of = os.path.join(
+                self.context.destination, self.get_domain_name() + ".yaml"
+            )
+            with open (of, "wt") as out:
+                yaml.dump(registry, out)
+            logging.info("Created data dictionary: " + os.path.abspath(of))
         return
 
 

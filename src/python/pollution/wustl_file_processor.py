@@ -34,6 +34,9 @@ class WUSTLFile(NetCDFFile):
         raise ValueError("File name: {} does not match expected pattern"
                              .format(self.infile))
 
+    def get_aggregation_year(self):
+        return self.year
+
     def on_prepare(self):
         if self.extra_columns is not None:
             raise ValueError("For NetCDF files downloaded from WUSTL, extra columns cannot "
@@ -47,6 +50,27 @@ class WUSTLFile(NetCDFFile):
         else:
             self.extra_columns = None
         return
+
+    def get_table_name(self):
+        if self.context.table is not None:
+            return super().get_table_name()
+        if self.year is None:
+            return super().get_table_name()
+        if self.context.variables:
+            v1 = self.context.variables[0]
+            if len(self.context.variables) > 1:
+                t = str(v1) + "_with_components"
+            else:
+                t = str(v1)
+        else:
+            return super().get_table_name()
+        if self.month is None:
+            t += "_annual"
+        else:
+            t += "_monthly"
+        if self.context.statistics:
+            t += "_" + self.context.statistics
+        return t
 
 
 if __name__ == '__main__':
