@@ -61,6 +61,11 @@ inputs:
     doc: |
       [Collection of shapefiles](https://www2.census.gov/geo/tiger), 
       either GENZ or TIGER
+  table:
+    type: string?
+    doc: |
+      Optional name ot the table where the aggregated data will be
+      eventually stored
 
 steps:
   get_shapes:
@@ -118,12 +123,14 @@ steps:
       shape_files: get_shapes/shape_files
       variable: variable
       components: component
+      table: table
       band:
         valueFrom: $([inputs.variable].concat(inputs.components))
     out:
       - log
       - errors
       - csv_data
+      - data_dictionary
 
 outputs:
   shapes:
@@ -136,6 +143,9 @@ outputs:
   aggregate_data:
     type: File
     outputSource: aggregate/csv_data
+  data_dictionary:
+    type: File?
+    outputSource: aggregate/data_dictionary
   aggregate_log:
     type: File?
     outputSource: aggregate/log

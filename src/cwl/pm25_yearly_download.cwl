@@ -69,6 +69,16 @@ inputs:
     doc: |
       [Collection of shapefiles](https://www2.census.gov/geo/tiger), 
       either GENZ or TIGER
+  database:
+    type: File
+    doc: Path to database connection file, usually database.ini
+  connection_name:
+    type: string
+    doc: The name of the section in the database.ini file
+  table:
+    type: string
+    doc: The name of the table to store teh aggreagted data in
+
 
 steps:
   process:
@@ -85,12 +95,69 @@ steps:
       variable: variable
       component: component
       strategy: strategy
+      table: table
     out:
       - shapes
       - aggregate_data
       - consolidated_data
       - aggregate_log
       - aggregate_err
+      - data_dictionary
+
+  extract_data_dictionary:
+    run:
+      class: ExpressionTool
+      inputs:
+        yaml_files:
+          type: File[]
+      outputs:
+        data_dictionary:
+          type: File
+      expression: |
+        ${
+          return {data_dictionary: inputs.yaml_files[0]}
+        }
+    in:
+      yaml_files: process/data_dictionary
+    out:
+      - data_dictionary
+
+  ingest:
+    run: ingest.cwl
+    doc: Uploads data into the database
+    in:
+      registry: extract_data_dictionary/data_dictionary
+      domain:
+        valueFrom: "exposures"
+      table: table
+      input: process/aggregate_data
+      database: database
+      connection_name: connection_name
+    out: [log, errors]
+
+  index:
+    run: index.cwl
+    in:
+      depends_on: ingest/log
+      registry: extract_data_dictionary/data_dictionary
+      domain:
+        valueFrom: "exposures"
+      table: table
+      database: database
+      connection_name: connection_name
+    out: [log, errors]
+
+  vacuum:
+    run: vacuum.cwl
+    in:
+      depends_on: index/log
+      registry: extract_data_dictionary/data_dictionary
+      domain:
+        valueFrom: "exposures"
+      table: table
+      database: database
+      connection_name: connection_name
+    out: [log, errors]
 
 
 
@@ -98,6 +165,9 @@ outputs:
   aggregate_data:
     type: File[]
     outputSource: process/aggregate_data
+  data_dictionary:
+    type: File
+    outputSource: extract_data_dictionary/data_dictionary
   consolidated_data:
     type: File[]
     outputSource: process/consolidated_data
@@ -119,3 +189,21 @@ outputs:
     type: File[]
     outputSource: process/aggregate_err
 
+  ingest_log:
+    type: File
+    outputSource: ingest/log
+  index_log:
+    type: File
+    outputSource: index/log
+  vacuum_log:
+    type: File
+    outputSource: vacuum/log
+  ingest_err:
+    type: File
+    outputSource: ingest/errors
+  index_err:
+    type: File
+    outputSource: index/errors
+  vacuum_err:
+    type: File
+    outputSource: vacuum/errors

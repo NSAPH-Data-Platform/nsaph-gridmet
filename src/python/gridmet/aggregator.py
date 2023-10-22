@@ -120,13 +120,16 @@ class Aggregator(ABC):
             writer.writerow(headers)
         return self.outfile
 
-    def get_registry(self, domain_name: str, table_name: str):
+    def get_registry(self, domain_name: str, table_name: str,
+                     description: str = None):
+        if description is None:
+            description = "Dorieh data model for aggregation of a grid"
         key = str(self.geography.value).lower()
         domain = {
             domain_name: {
                 "schema": domain_name,
                 "index": "all",
-                "description": "NSAPH data model for gridMET",
+                "description": description,
                 "header": True,
                 "quoting": 3,
                 "tables": {
