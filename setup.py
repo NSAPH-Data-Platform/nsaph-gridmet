@@ -7,7 +7,7 @@ with open("README.md", "r") as readme:
 setup(
     name='gridmet',
     version="0.0.3.8",
-    url='https://gitlab-int.rc.fas.harvard.edu/rse/francesca_dominici/tools/gridmet',
+    url='https://github.com/NSAPH-Data-Platform/nsaph-gridmet',
     license='',
     author='Michael Bouzinier',
     author_email='mbouzinier@g.harvard.edu',
