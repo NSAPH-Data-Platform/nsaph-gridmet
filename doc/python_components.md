@@ -21,4 +21,6 @@ members/launcher
 members/regsitry
 members/shapes
 members/task
+members/netCDF_file_processor
+members/wustl_file_processor
 ```

@@ -36,6 +36,40 @@ doc: |
   CSV files. This is a wrapper around actual aggregation of
   one file allowing to scatter (parallelize) the aggregation
   over years.
+  
+  The output of the workflow are gzipped CSV files containing
+  aggregated data. 
+  
+  Optionally, the aggregated data can be ingested into a database
+  specified in the connection parameters:
+  
+  * `database.ini` file containing connection descriptions
+  * `connection_name`  a string referring to a section in the `database.ini`
+     file, identifying specific connection to be used.
+
+  The workflow can be invoked either by providing command line options 
+  as in the following example:
+  
+      toil-cwl-runner --retryCount 1 --cleanWorkDir never \ 
+          --outdir /scratch/work/exposures/outputs \ 
+          --workDir /scratch/work/exposures \
+          pm25_yearly_download.cwl \  
+          --database /opt/local/database.ini \ 
+          --connection_name dorieh \ 
+          --downloads s3://nsaph-public/data/exposures/wustl/ \ 
+          --strategy default \ 
+          --geography zcta \ 
+          --shape_file_collection tiger \ 
+          --table pm25_annual_components_mean
+
+  Or, by providing a YaML file (see [example](../test_exposure_job)) 
+  with similar options:
+  
+      toil-cwl-runner --retryCount 1 --cleanWorkDir never \ 
+          --outdir /scratch/work/exposures/outputs \ 
+          --workDir /scratch/work/exposures \
+          pm25_yearly_download.cwl test_exposure_job.yml 
+  
 
 inputs:
   proxy:
@@ -44,25 +78,42 @@ inputs:
     doc: HTTP/HTTPS Proxy if required
   downloads:
     type: Directory
-    doc: Directory, containing files, downloaded and unpacked from WUSTL box
+    doc: |
+      Local or AWS bucket folder containing netCDF grid files, downloaded 
+      and unpacked from Washington University in St. Louis (WUSTL) Box
+      site. Annual and monthly data repositories are described in
+      [WUSTL Atmospheric Composition Analysis Group](https://sites.wustl.edu/acag/datasets/surface-pm2-5/).
+      
+      The annual data for PM2.5 is also available in 
+      a Harvard URC AWS Bucket: `s3://nsaph-public/data/exposures/wustl/`
   geography:
     type: string
     doc: |
       Type of geography: zip codes or counties
-      Valid values: "zip", "zcta" or "county"
+      Supported values: "zip", "zcta" or "county"
   years:
     type: int[]
     default: [2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017]
   variable:
     type: string
     default:  PM25
+    doc: |
+      The main variable that is being aggregated over shapes. We have tested
+      the pipeline for PM25
   component:
     type: string[]
     default: [BC, NH4, NIT, OM, SO4, SOIL, SS]
+    doc: |
+      Optional components provided as percentages in a separate set 
+      of netCDF files
   strategy:
     type: string
     default: downscale
-    doc: "Rasterization strategy"
+    doc: |
+      Rasterization strategy, see
+      [documentation](https://nsaph-data-platform.github.io/nsaph-platform-docs/common/gridmet/doc/strategy.html)
+      for the list of supported values and explanations
+      
   shape_file_collection:
     type: string
     default: tiger
@@ -71,13 +122,22 @@ inputs:
       either GENZ or TIGER
   database:
     type: File
-    doc: Path to database connection file, usually database.ini
+    doc: |
+      Path to database connection file, usually database.ini. 
+      This argument is ignored if `connection_name` == `None`
+    default:
+      path: database.ini
+      class: File
+
   connection_name:
     type: string
-    doc: The name of the section in the database.ini file
+    doc: |
+      The name of the section in the database.ini file or a literal
+      `None` to skip over database ingestion step
   table:
     type: string
-    doc: The name of the table to store teh aggreagted data in
+    doc: The name of the table to store teh aggregated data in
+    default: pm25_aggregated
 
 
 steps:
@@ -124,6 +184,7 @@ steps:
 
   ingest:
     run: ingest.cwl
+    when: $(inputs.connection_name.toLowerCase() != 'none')
     doc: Uploads data into the database
     in:
       registry: extract_data_dictionary/data_dictionary
@@ -137,6 +198,7 @@ steps:
 
   index:
     run: index.cwl
+    when: $(inputs.connection_name.toLowerCase() != 'none')
     in:
       depends_on: ingest/log
       registry: extract_data_dictionary/data_dictionary
@@ -149,6 +211,7 @@ steps:
 
   vacuum:
     run: vacuum.cwl
+    when: $(inputs.connection_name.toLowerCase() != 'none')
     in:
       depends_on: index/log
       registry: extract_data_dictionary/data_dictionary
@@ -168,6 +231,7 @@ outputs:
   data_dictionary:
     type: File
     outputSource: extract_data_dictionary/data_dictionary
+    doc: Data dictionary file, in YaML format, describing output variables
   consolidated_data:
     type: File[]
     outputSource: process/consolidated_data
