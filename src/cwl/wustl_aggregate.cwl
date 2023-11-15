@@ -28,7 +28,7 @@ requirements:
   ResourceRequirement:
     coresMin: 2
     ramMin: 16384
-    outdirMin: 5G
+    outdirMin: 5120
     # coresMax: 6
 
 
