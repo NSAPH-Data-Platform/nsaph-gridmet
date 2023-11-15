@@ -26,6 +26,7 @@ baseCommand: [python, -m, nsaph_gis.shapes_downloader]
 requirements:
   ResourceRequirement:
     coresMin: 1
+    ramMin: 4096
   EnvVarRequirement:
     envDef:
       HTTP_PROXY: "$('proxy' in inputs? inputs.proxy: null)"

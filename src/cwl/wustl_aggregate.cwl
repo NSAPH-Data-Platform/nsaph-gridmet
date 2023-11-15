@@ -26,8 +26,9 @@ baseCommand: [python, -m, pollution.wustl_file_processor]
 requirements:
   InlineJavascriptRequirement: {}
   ResourceRequirement:
-    coresMin: 1
-    ramMin: 8192
+    coresMin: 2
+    ramMin: 16384
+    outdirMin: 5G
     # coresMax: 6
 
 
