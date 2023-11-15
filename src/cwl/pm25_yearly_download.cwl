@@ -36,6 +36,40 @@ doc: |
   CSV files. This is a wrapper around actual aggregation of
   one file allowing to scatter (parallelize) the aggregation
   over years.
+  
+  The output of the workflow are gzipped CSV files containing
+  aggregated data. 
+  
+  Optionally, the aggregated data can be ingested into a database
+  specified in the connection parameters:
+  
+  * `database.ini` file containing connection descriptions
+  * `connection_name`  a string referring to a section in the `database.ini`
+     file, identifying specific connection to be used.
+
+  The workflow can be invoked either by providing command line options 
+  as in the following example:
+  
+      toil-cwl-runner --retryCount 1 --cleanWorkDir never \ 
+          --outdir /scratch/work/exposures/outputs \ 
+          --workDir /scratch/work/exposures \
+          pm25_yearly_download.cwl \  
+          --database /opt/local/database.ini \ 
+          --connection_name dorieh \ 
+          --downloads s3://nsaph-public/data/exposures/wustl/ \ 
+          --strategy default \ 
+          --geography zcta \ 
+          --shape_file_collection tiger \ 
+          --table pm25_annual_components_mean
+
+  Or, by providing a YaML file (see [example](../test_exposure_job)) 
+  with similar options:
+  
+      toil-cwl-runner --retryCount 1 --cleanWorkDir never \ 
+          --outdir /scratch/work/exposures/outputs \ 
+          --workDir /scratch/work/exposures \
+          pm25_yearly_download.cwl test_exposure_job.yml 
+  
 
 inputs:
   proxy:
