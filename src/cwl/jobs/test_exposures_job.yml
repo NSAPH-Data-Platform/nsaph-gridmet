@@ -8,6 +8,8 @@ test_script:
 
 table:      pm25_annual_components_mean
 geography:  zcta
-downloads:  "s3://nsaph-public/data/exposures/wustl/"
+downloads:
+  path: "s3://nsaph-public/data/exposures/wustl/"
+  class: Directory
 strategy:   default
 shape_file_collection:  tiger
