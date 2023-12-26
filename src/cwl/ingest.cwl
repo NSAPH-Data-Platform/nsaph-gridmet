@@ -26,6 +26,11 @@ baseCommand: [python, -m, nsaph.loader.data_loader]
 requirements:
   InlineJavascriptRequirement: {}
 
+hints:
+  DockerRequirement:
+    dockerPull: forome/dorieh
+
+
 doc: |
   This tool ingests tabular data, usually in CSV format into the database
 
