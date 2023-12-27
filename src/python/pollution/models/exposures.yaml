@@ -1,12 +1,12 @@
-wustl:
+exposures:
   reference: "https://sites.wustl.edu/acag/datasets/surface-pm2-5/"
   header: true
   quoting: 3
   index: "unless excluded"
-  schema: "pollution_wustl"
+  schema: "exposures"
   description: "Data model for pollution downloaded from Washington University in St. Louis"
   tables:
-    pm25_monthly_county:
+    pm25_monthly_county_mean:
       description: |
         Estimated annual and monthly ground-level fine particulate matter
         (PM2.5) for 1998-2020 by combining Aerosol Optical Depth (AOD)
@@ -22,9 +22,15 @@ wustl:
         Aggregated at US county level
 
       columns:
-        - county
-        - year
-        - month
+        - county:
+            index: true
+            type: VARCHAR
+        - year:
+            index: true
+            type: INT
+        - month:
+            index: true
+            type: INT
         - PM25:
             type: NUMERIC
         - fips5:
@@ -52,3 +58,34 @@ wustl:
         - county
         - year
         - month
+
+    pm25_annual_components_zcta_mean:
+      description: |
+        Estimated annual ground-level fine particulate matter
+        Aggregated at US ZCTA level
+      columns:
+      - PM25:
+          type: NUMERIC
+      - BC:
+          type: NUMERIC
+      - NH4:
+          type: NUMERIC
+      - NIT:
+          type: NUMERIC
+      - OM:
+          type: NUMERIC
+      - SO4:
+          type: NUMERIC
+      - SOIL:
+          type: NUMERIC
+      - SS:
+          type: NUMERIC
+      - zcta:
+          index: true
+          type: VARCHAR
+      - Year:
+          index: true
+          type: INT
+      primary_key:
+      - zcta
+      - Year

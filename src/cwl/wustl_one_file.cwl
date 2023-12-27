@@ -113,6 +113,9 @@ steps:
     run: wustl_aggregate.cwl
     in:
       strategy: strategy
+      band:
+        valueFrom: $([inputs.sband])
+      sband: band
       geography: geography
       netcdf_data: findfile/netcdf_file
       shape_files: shape_files
@@ -130,7 +133,7 @@ steps:
       database: database
       connection_name: connection_name
       domain:
-        valueFrom: "wustl"
+        valueFrom: "exposures"
     out: [log, errors]
 
 outputs:

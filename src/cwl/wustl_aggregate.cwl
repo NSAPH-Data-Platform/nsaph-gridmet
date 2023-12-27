@@ -27,7 +27,7 @@ requirements:
   InlineJavascriptRequirement: {}
   ResourceRequirement:
     coresMin: 2
-    ramMin: 16384
+    ramMin: 8192
     outdirMin: 5120
     # coresMax: 6
 

@@ -81,7 +81,7 @@ steps:
           type: string
         band:
           type: string
-      expression: "$({'table': (inputs.band + '_monthly_' + inputs.geography)})"
+      expression: "$({'table': (inputs.band + '_monthly_' + inputs.geography + '_mean')})"
       outputs:
         table:
           type: string
@@ -95,7 +95,7 @@ steps:
     run: reset.cwl
     in:
       domain:
-        valueFrom: "wustl"
+        valueFrom: "exposures"
       database: database
       connection_name: connection_name
       table: make_table_name/table
@@ -132,7 +132,7 @@ steps:
     in:
       depends_on: process/ingest_log
       domain:
-        valueFrom: "wustl"
+        valueFrom: "exposures"
       table: make_table_name/table
       database: database
       connection_name: connection_name
@@ -143,7 +143,7 @@ steps:
     in:
       depends_on: index/log
       domain:
-        valueFrom: "wustl"
+        valueFrom: "exposures"
       table: make_table_name/table
       database: database
       connection_name: connection_name
