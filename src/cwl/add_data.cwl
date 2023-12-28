@@ -85,7 +85,6 @@ inputs:
     doc: a special field used to enforce dependencies and execution order
   domain:
     type: string
-    default: gridmet
     inputBinding:
       prefix: --domain
 

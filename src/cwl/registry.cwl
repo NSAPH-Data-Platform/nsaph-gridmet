@@ -34,6 +34,13 @@ inputs:
     doc: A path to a file name with resulting data model
     inputBinding:
       position: 1
+  domain:
+    type: string?
+    inputBinding:
+      position: 2
+  depends_on:
+    type: File?
+    doc: a special field used to enforce dependencies and execution order
 
 outputs:
   log:

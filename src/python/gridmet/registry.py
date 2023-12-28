@@ -39,8 +39,9 @@ class Registry:
     creates YAML data model for gridMET tables.
     """
 
-    def __init__(self, destination:str):
+    def __init__(self, destination:str, dn: str = None):
         self.destination = destination
+        self.name = dn
         init_logging()
 
     def update(self):
@@ -49,10 +50,9 @@ class Registry:
         return
 
     def create_yaml(self):
-        name = "climate"
         domain = {
-            name: {
-                "schema": name,
+            self.name: {
+                "schema": self.name,
                 "index": "all",
                 "description": "NSAPH data model for gridMET climate data",
                 "header": True,
@@ -92,7 +92,7 @@ class Registry:
 
 
                 }
-                domain[name]["tables"][tname] = table
+                domain[self.name]["tables"][tname] = table
 
         return yaml.dump(domain)
 
@@ -103,5 +103,9 @@ class Registry:
 
 
 if __name__ == '__main__':
-    Registry(sys.argv[1]).update()
+    if len(sys.argv) > 2:
+        dname = sys.argv[2]
+    else:
+        dname = None
+    Registry(sys.argv[1], dname).update()
     

@@ -54,6 +54,10 @@ inputs:
   bands:
     type: string[]
     # default: ['bi', 'erc', 'etr', 'fm100', 'fm1000', 'pet', 'pr', 'rmax', 'rmin', 'sph', 'srad', 'th', 'tmmn', 'tmmx', 'vpd', 'vs']
+  strategy:
+    type: string
+    default: downscale
+    doc: "Rasterization strategy"
   database:
     type: File
     doc: Path to database connection file, usually database.ini
@@ -63,12 +67,58 @@ inputs:
   dates:
     type: string?
     doc: 'dates restriction, for testing purposes only'
+  domain:
+    type: string
+    default: climate
+
 
 steps:
+  init_db_schema:
+    doc: We need to do it because of parallel creation of tables
+    run:
+      class: CommandLineTool
+      baseCommand: [python, -m, nsaph.util.psql]
+      doc: |
+        This tool executes an SQL statement in the database to grant
+        read priviligies to NSAPH users (memebrs of group nsaph_admin)
+      inputs:
+        database:
+          type: File
+          doc: Path to database connection file, usually database.ini
+          inputBinding:
+            prefix: --db
+        connection_name:
+          type: string
+          doc: The name of the section in the database.ini file
+          inputBinding:
+            prefix: --connection
+        domain:
+          type: string
+          #default: climate
+      arguments:
+        - valueFrom: $("CREATE SCHEMA IF NOT EXISTS " + inputs.domain + ';')
+          position: 3
+      outputs:
+        log:
+          type: stdout
+        err:
+          type: stderr
+      stderr: "schema.err"
+      stdout: "schema.log"
+    in:
+      database: database
+      connection_name: connection_name
+      domain: domain
+    out:
+      - log
+      - err
+
   make_registry:
     run: registry.cwl
     doc: Writes down YAML file with the database model
-    in: []
+    in:
+      depends_on: init_db_schema/log
+      domain: domain
     out:
       - model
       - log
@@ -85,6 +135,8 @@ steps:
           type: File
         table:
           type: string
+        domain:
+          type: string
         database:
           type: File
         connection_name:
@@ -94,8 +146,7 @@ steps:
           run: reset.cwl
           in:
             registry:  registry
-            domain:
-              valueFrom: "climate"
+            domain: domain
             database: database
             connection_name: connection_name
             table: table
@@ -107,8 +158,7 @@ steps:
           in:
             depends_on: reset/log
             registry: registry
-            domain:
-              valueFrom: "climate"
+            domain: domain
             table: table
             database: database
             connection_name: connection_name
@@ -132,6 +182,7 @@ steps:
       connection_name: connection_name
       band: bands
       geography: geography
+      domain: domain
       table:
         valueFrom: $(inputs.geography + '_' + inputs.band)
     out:
@@ -152,11 +203,13 @@ steps:
       model: make_registry/model
       shapes: shapes
       geography: geography
+      strategy: strategy
       year: years
       dates: dates
       band: bands
       database: database
       connection_name: connection_name
+      domain: domain
       table:
         valueFrom: $(inputs.geography + '_' + inputs.band)
 
@@ -177,6 +230,8 @@ steps:
           type: string
         band:
           type: string
+        domain:
+          type: string
         table:
           type: string
         database:
@@ -185,6 +240,8 @@ steps:
           type: string
         dates:
           type: string?
+        strategy:
+          type: string
 
       steps:
         download:
@@ -218,6 +275,7 @@ steps:
             dates: dates
             band: band
             input: download/data
+            strategy: strategy
             shape_files: get_shapes/shape_files
           out:
             - data
@@ -229,6 +287,7 @@ steps:
           doc: Uploads data into the database
           in:
             registry: model
+            domain: domain
             table: table
             input: aggregate/data
             database: database
@@ -241,8 +300,7 @@ steps:
           run: vacuum.cwl
           in:
             depends_on: ingest/log
-            domain:
-              valueFrom: "climate"
+            domain: domain
             registry: model
             table: table
             database: database
