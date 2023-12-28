@@ -26,9 +26,10 @@ baseCommand: [python, -m, nsaph.loader.data_loader]
 requirements:
   InlineJavascriptRequirement: {}
 
-hints:
-  DockerRequirement:
-    dockerPull: forome/dorieh
+# Running in DOcker container does not work on FASSE or Cannon, will have to find a workaround
+#hints:
+#  DockerRequirement:
+#    dockerPull: forome/dorieh
 
 
 doc: |
