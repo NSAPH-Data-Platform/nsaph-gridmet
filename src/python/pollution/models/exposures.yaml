@@ -103,7 +103,7 @@ exposures:
               code: "GENERATED ALWAYS AS (public.fips2state_iso(substring(county, 1, 2))) STORED"
 
       primary_key:
-        - county
+        - zcta
         - year
         - month
 
