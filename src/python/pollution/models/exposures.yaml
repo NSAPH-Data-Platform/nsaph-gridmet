@@ -87,7 +87,7 @@ exposures:
         - year
         - month
 
-    pm25_annual_components_zcta_mean:
+    pm25_components_annual_zcta_mean:
       description: |
         Estimated annual ground-level fine particulate matter
         Aggregated at US ZCTA level

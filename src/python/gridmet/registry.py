@@ -49,12 +49,12 @@ class Registry:
         return
 
     def create_yaml(self):
-        name = "gridmet"
+        name = "climate"
         domain = {
             name: {
                 "schema": name,
                 "index": "all",
-                "description": "NSAPH data model for gridMET",
+                "description": "NSAPH data model for gridMET climate data",
                 "header": True,
                 "quoting": 3,
                 "tables": {

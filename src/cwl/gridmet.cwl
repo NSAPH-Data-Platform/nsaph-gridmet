@@ -95,7 +95,7 @@ steps:
           in:
             registry:  registry
             domain:
-              valueFrom: "gridmet"
+              valueFrom: "climate"
             database: database
             connection_name: connection_name
             table: table
@@ -108,7 +108,7 @@ steps:
             depends_on: reset/log
             registry: registry
             domain:
-              valueFrom: "gridmet"
+              valueFrom: "climate"
             table: table
             database: database
             connection_name: connection_name
@@ -242,7 +242,7 @@ steps:
           in:
             depends_on: ingest/log
             domain:
-              valueFrom: "gridmet"
+              valueFrom: "climate"
             registry: model
             table: table
             database: database

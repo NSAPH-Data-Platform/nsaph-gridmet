@@ -26,10 +26,10 @@
 -- as Randall Martin's pollution data downloaded from WashU
 -- Name: epa.pm25_monthly
 
-DROP MATERIALIZED VIEW IF EXISTS epa.pm25_monthly;
+DROP MATERIALIZED VIEW IF EXISTS epa.pm25_monthly CASCADE;
 CREATE MATERIALIZED VIEW epa.pm25_monthly AS
 SELECT
-    EXTRACT (YEAR FROM date_local)::INT::VARCHAR AS year,
+    EXTRACT (YEAR FROM date_local)::INT AS year,
     btrim(to_char(EXTRACT (MONTH FROM date_local)::INT, '00'))::VARCHAR AS month,
     state_code AS fips2,
     county_code AS fips3,
@@ -55,9 +55,67 @@ CREATE INDEX pm25_monthly_f5 ON epa.pm25_monthly (fips5);
 -- Creates materialized view to compare PM25 data from
 -- EPA and from WashU (Randall Martin's data)
 
-CREATE SCHEMA IF NOT EXISTS pollution;
-DROP MATERIALIZED VIEW IF EXISTS pollution.pm25_monthly;
-CREATE MATERIALIZED VIEW pollution.pm25_monthly AS
+
+DROP TABLE IF EXISTS exposures.pm25_monthly_county_epa CASCADE;
+CREATE TABLE exposures.pm25_monthly_county_epa AS
+SELECT
+    EXTRACT (YEAR FROM date_local)::INT AS year,
+    EXTRACT (MONTH FROM date_local)::INT AS month,
+    state_code AS fips2,
+    county_code AS fips3,
+    public.fips2state(state_code) AS state,
+    state_code||county_code AS fips5,
+    MAX(state_name) AS state_name,
+    MAX(county_name) AS county_name,
+    AVG(arithmetic_mean) AS pm25,
+    COUNT(*)
+FROM
+    epa.pm25_daily AS ep
+GROUP BY 1,2,3,4
+ORDER BY 1,2,3,4
+;
+CREATE INDEX epa_pm25_monthly_ym ON exposures.pm25_monthly_county_epa (year, month);
+CREATE INDEX epa_pm25_monthly_m ON  exposures.pm25_monthly_county_epa (month);
+CREATE INDEX epa_pm25_monthly_f2 ON exposures.pm25_monthly_county_epa (fips2);
+CREATE INDEX epa_pm25_monthly_s ON  exposures.pm25_monthly_county_epa (state);
+CREATE INDEX epa_pm25_monthly_f3 ON exposures.pm25_monthly_county_epa (fips3);
+CREATE INDEX epa_pm25_monthly_f5 ON exposures.pm25_monthly_county_epa (fips5);
+
+-- ===========================================
+
+DROP TABLE IF EXISTS exposures.pm25_daily_county_epa CASCADE;
+CREATE TABLE exposures.pm25_daily_county_epa AS
+SELECT
+    date_local,
+    EXTRACT (YEAR FROM date_local)::INT AS year,
+    EXTRACT (MONTH FROM date_local)::INT AS month,
+    EXTRACT (DAY FROM date_local)::INT AS day,
+    state_code AS fips2,
+    county_code AS fips3,
+    public.fips2state(state_code) AS state,
+    state_code||county_code AS fips5,
+    MAX(state_name) AS state_name,
+    MAX(county_name) AS county_name,
+    AVG(arithmetic_mean) AS pm25,
+    COUNT(*)
+FROM
+    epa.pm25_daily AS ep
+GROUP BY 1,5,6
+ORDER BY 1,5,6
+;
+CREATE INDEX epa_pm25_daily_dt ON exposures.pm25_daily_county_epa (date_local);
+CREATE INDEX epa_pm25_daily_ym ON exposures.pm25_daily_county_epa (year, month);
+CREATE INDEX epa_pm25_daily_m ON  exposures.pm25_daily_county_epa (month);
+CREATE INDEX epa_pm25_daily_f2 ON exposures.pm25_daily_county_epa (fips2);
+CREATE INDEX epa_pm25_daily_s ON  exposures.pm25_daily_county_epa (state);
+CREATE INDEX epa_pm25_daily_f3 ON exposures.pm25_daily_county_epa (fips3);
+CREATE INDEX epa_pm25_daily_f5 ON exposures.pm25_daily_county_epa (fips5);
+
+-- ===========================================
+
+
+DROP MATERIALIZED VIEW IF EXISTS exposures.pm25_monthly_comparison;
+CREATE MATERIALIZED VIEW exposures.pm25_monthly_comparison AS
 SELECT
     ep.year,
     ep.month,
@@ -71,17 +129,17 @@ SELECT
     ep.pm25 AS epa_pm25,
     rm.pm25 AS rm_pm25
 FROM
-    epa.pm25_monthly AS ep
-    full outer join pollution_wustl.pm25_monthly_county as rm
+    exposures.pm25_monthly_county_epa AS ep
+    full outer join exposures.pm25_monthly_county_mean as rm
     on
         ep.year = rm.year
         and ep.month = rm.month
         and ep.fips5 = rm.fips5
 ORDER BY 1, 2, 3
 ;
-CREATE INDEX pm25_monthly_ym ON pollution.pm25_monthly (year, month);
-CREATE INDEX pm25_monthly_m ON pollution.pm25_monthly (month);
-CREATE INDEX pm25_monthly_f2 ON pollution.pm25_monthly (fips2);
-CREATE INDEX pm25_monthly_s ON pollution.pm25_monthly (state);
-CREATE INDEX pm25_monthly_f3 ON pollution.pm25_monthly (fips3);
-CREATE INDEX pm25_monthly_f5 ON pollution.pm25_monthly (fips5);
+CREATE INDEX cpm25_monthly_ym ON exposures.pm25_monthly_comparison (year, month);
+CREATE INDEX cpm25_monthly_m ON exposures.pm25_monthly_comparison (month);
+CREATE INDEX cpm25_monthly_f2 ON exposures.pm25_monthly_comparison (fips2);
+CREATE INDEX cpm25_monthly_s ON exposures.pm25_monthly_comparison (state);
+CREATE INDEX cpm25_monthly_f3 ON exposures.pm25_monthly_comparison (fips3);
+CREATE INDEX cpm25_monthly_f5 ON exposures.pm25_monthly_comparison (fips5);
