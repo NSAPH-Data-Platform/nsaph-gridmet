@@ -54,6 +54,54 @@ exposures:
               type: "generated"
               code: "GENERATED ALWAYS AS (public.fips2state_iso(substring(county, 1, 2))) STORED"
 
+    pm25_monthly_zcta_mean:
+      description: |
+        Estimated annual and monthly ground-level fine particulate matter
+        (PM2.5) for 1998-2020 by combining Aerosol Optical Depth (AOD)
+        retrievals from the NASA MODIS, MISR, and SeaWIFS instruments with
+        the GEOS-Chem chemical transport model, and subsequently calibrating
+        to global ground-based observations using a Geographically Weighted
+        Regression (GWR), as detailed in the below reference for V5.GL.01.
+        V5.GL.02 follows the methodology of V5.GL.01, but updates the
+        ground-based observations used to calibrate the geophysical PM2.5
+        estimates for the entire time series, and extends temporal
+        coverage through 2020.
+
+        Aggregated at US ZCTA (Zip Code Tabulation Area) level
+
+      columns:
+        - zcta:
+            index: true
+            type: VARCHAR
+        - year:
+            index: true
+            type: INT
+        - month:
+            index: true
+            type: INT
+        - PM25:
+            type: NUMERIC
+        - fips5:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (county::INT) STORED"
+        - fips2:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (substring(county, 1, 2)::INT) STORED"
+        - fips3:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (substring(county, 3, 3)::INT) STORED"
+        - state:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (public.fips2state(substring(county, 1, 2)::VARCHAR)) STORED"
+        - state_iso:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (public.fips2state_iso(substring(county, 1, 2))) STORED"
+
       primary_key:
         - county
         - year
