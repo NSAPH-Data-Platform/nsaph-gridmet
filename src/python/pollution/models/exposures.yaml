@@ -53,6 +53,10 @@ exposures:
             source:
               type: "generated"
               code: "GENERATED ALWAYS AS (public.fips2state_iso(substring(county, 1, 2))) STORED"
+      primary_key:
+        - county
+        - year
+        - month
 
     pm25_monthly_zcta_mean:
       description: |
@@ -117,3 +121,34 @@ exposures:
       primary_key:
       - zcta
       - Year
+
+    pm25_components_annual_county_mean:
+      description: |
+        Estimated annual ground-level fine particulate matter
+        Aggregated at US ZCTA level
+      columns:
+        - PM25:
+            type: NUMERIC
+        - BC:
+            type: NUMERIC
+        - NH4:
+            type: NUMERIC
+        - NIT:
+            type: NUMERIC
+        - OM:
+            type: NUMERIC
+        - SO4:
+            type: NUMERIC
+        - SOIL:
+            type: NUMERIC
+        - SS:
+            type: NUMERIC
+        - zcta:
+            index: true
+            type: VARCHAR
+        - Year:
+            index: true
+            type: INT
+      primary_key:
+        - county
+        - Year
