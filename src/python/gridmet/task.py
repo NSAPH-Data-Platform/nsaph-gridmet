@@ -42,7 +42,8 @@ from nsaph_gis.constants import Geography, RasterizationStrategy
 from nsaph_gis.geometry import PointInRaster
 from nsaph_utils.utils.io_utils import DownloadTask, fopen, as_stream
 
-NO_DATA = -999 # I do not know what it is, but not setting it causes a warning
+NO_DATA = 32767.0  # The value filled in masked arrays in NetCDF files
+# for the masked cells
 
 
 def count_lines(f):
@@ -177,6 +178,7 @@ class ComputeGridmetTask(ABC):
         for idx in range(len(days)):
             day = days[idx]
             layer = self.dataset[self.variable][idx, :, :]
+            # layer = layer[layer.mask == False]
             t1 = datetime.now()
             self.compute_one_day(collector, day, layer)
             collector.flush()
