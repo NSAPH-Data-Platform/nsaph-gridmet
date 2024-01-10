@@ -245,6 +245,7 @@ class ComputeShapesTask(ComputeGridmetTask):
         dt = self.to_date(day)
 
         if self.factor > 1:
+            logging.info("Downscaling by the factor of " + str(self.factor))
             layer = disaggregate(layer, self.factor)
 
         now = datetime.now()
