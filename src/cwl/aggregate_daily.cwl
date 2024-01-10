@@ -1,5 +1,5 @@
 #!/usr/bin/env cwl-runner
-### Downloader of gridMET Data
+### Tool aggregating a NetCDF grid file over shapes
 #  Copyright (c) 2021. Harvard University
 #
 #  Developed by Research Software Engineering,
@@ -36,8 +36,17 @@ requirements:
 
 
 doc: |
-  This tool preprocesses gridMET to aggregate over shapes
-  (zip codes or counties) and time. It produces daily mean values
+  This tool preprocesses a NetCDF (.nc) file and aggregates gridded data 
+  over shapes (zip codes or counties) and time. It produces daily mean values.
+  The tool expects daily values in teh grid nodes.
+  
+  The tool expects multiple (daily) values for one variable in every grid node. 
+  The variables are expected to be formatted as they are in 
+  [University of Idaho Gridded Surface Meteorological Dataset](https://developers.google.com/earth-engine/datasets/catalog/IDAHO_EPSCOR_GRIDMET#description)
+
+  See also [aggregate_wustl.cwl](aggregate_wustl) for aggregating
+  single variable values with multiple variables in every node as formatted
+  by [Atmospheric Composition Analysis Group of Washington University](https://sites.wustl.edu/acag/datasets/surface-pm2-5/)
 
 inputs:
   proxy:
@@ -65,10 +74,17 @@ inputs:
     doc: "Year to process"
     inputBinding:
       prefix: --years
+  month:
+    type: int?
+    doc: "Optional month to process"
+    inputBinding:
+      prefix: --dates
+      valueFrom: $("month:" + self)
+
   band:
     type: string
     doc: |
-      [Gridmet Band](https://gee.stac.cloud/WUtw2spmec7AM9rk6xMXUtStkMtbviDtHK?t=bands)
+      [Gridmet Band](https://developers.google.com/earth-engine/datasets/catalog/IDAHO_EPSCOR_GRIDMET#bands)
     inputBinding:
       prefix: --var
   dates:
@@ -110,4 +126,4 @@ outputs:
   errors:
     type: stderr
 
-stderr: $("aggr-" + inputs.band + "-" + inputs.year + ".err")
+stderr: $("aggr-" + inputs.band + "-" + inputs.year  + "-" + inputs.month + ".err")

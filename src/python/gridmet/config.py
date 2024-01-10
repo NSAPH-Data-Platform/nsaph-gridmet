@@ -108,7 +108,7 @@ class Shape(Enum):
 
 class GridmetVariable(Enum):
     """
-    `Gridmet Bands <https://gee.stac.cloud/WUtw2spmec7AM9rk6xMXUtStkMtbviDtHK?t=bands>`_
+    `GridMET Bands <https://developers.google.com/earth-engine/datasets/catalog/IDAHO_EPSCOR_GRIDMET#bands>`_
     and additional exposure variable types
     """
     bi = "bi"
@@ -225,7 +225,10 @@ class GridContext(Context):
                            help="Type of statistics"
                            )
     _dates = Argument("dates",
-                      help="Filter dates - for debugging purposes only",
+                      help="Filter dates, can be used "
+                           + "to paralellize computations "
+                           + "(e.g., over months) and "
+                           + "for debugging purposes",
                       required=False)
     _shape_files = Argument("shape_files",
                        cardinality=Cardinality.multiple,

@@ -52,6 +52,9 @@ inputs:
     type: string[]
     default: ['1999', '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020']
   bands:
+    doc: |
+      University of Idaho Gridded Surface Meteorological Dataset 
+      [bands](https://developers.google.com/earth-engine/datasets/catalog/IDAHO_EPSCOR_GRIDMET#bands)
     type: string[]
     # default: ['bi', 'erc', 'etr', 'fm100', 'fm1000', 'pet', 'pr', 'rmax', 'rmin', 'sph', 'srad', 'th', 'tmmn', 'tmmx', 'vpd', 'vs']
   strategy:
@@ -192,11 +195,13 @@ steps:
       - index_err
 
   process:
+    run: gridmet_one_file.cwl
     doc: Downloads raw data and aggregates it over shapes and time
     scatter:
       - band
       - year
     scatterMethod: nested_crossproduct
+
     in:
       proxy: proxy
       depends_on: init_tables/index_log
@@ -210,142 +215,19 @@ steps:
       database: database
       connection_name: connection_name
       domain: domain
+      months:
+        valueFrom: $([1,2,3,4,5,6,7,8,9,10,11,12])
       table:
         valueFrom: $(inputs.geography + '_' + inputs.band)
 
-    run:
-      class: Workflow
-      inputs:
-        depends_on:
-          type: Any?
-        proxy:
-          type: string?
-        model:
-          type: File
-        shapes:
-          type: Directory?
-        geography:
-          type: string
-        year:
-          type: string
-        band:
-          type: string
-        domain:
-          type: string
-        table:
-          type: string
-        database:
-          type: File
-        connection_name:
-          type: string
-        dates:
-          type: string?
-        strategy:
-          type: string
-
-      steps:
-        download:
-          run: download.cwl
-          doc: Downloads data
-          in:
-            year: year
-            band: band
-            proxy: proxy
-          out:
-            - data
-            - log
-            - errors
-
-        get_shapes:
-          run: get_shapes.cwl
-          in:
-            year: year
-            geo: geography
-            proxy: proxy
-          out: [shape_files]
-
-        aggregate:
-          run: process.cwl
-          doc: Processes data
-          in:
-            proxy: proxy
-            shapes: shapes
-            geography: geography
-            year: year
-            dates: dates
-            band: band
-            input: download/data
-            strategy: strategy
-            shape_files: get_shapes/shape_files
-          out:
-            - data
-            - log
-            - errors
-
-        ingest:
-          run: add_data.cwl
-          doc: Uploads data into the database
-          in:
-            registry: model
-            domain: domain
-            table: table
-            input: aggregate/data
-            database: database
-            connection_name: connection_name
-          out: [log, errors]
-
-        # do not need indexing as we define indices in advance
-
-        vacuum:
-          run: vacuum.cwl
-          in:
-            depends_on: ingest/log
-            domain: domain
-            registry: model
-            table: table
-            database: database
-            connection_name: connection_name
-          out: [log, errors]
-
-      outputs:
-        download_log:
-          type: File
-          outputSource: download/log
-        download_err:
-          type: File
-          outputSource: download/errors
-
-        aggregate_data:
-          type: File
-          outputSource: aggregate/data
-        aggregate_log:
-          type: File
-          outputSource: aggregate/log
-        aggregate_err:
-          type: File
-          outputSource: aggregate/errors
-
-        ingest_log:
-          type: File
-          outputSource: ingest/log
-        ingest_err:
-          type: File
-          outputSource: ingest/errors
-
-        vacuum_log:
-          type: File
-          outputSource: vacuum/log
-        vacuum_err:
-          type: File
-          outputSource: vacuum/errors
     out:
       - download_log
       - download_err
-      - aggregate_err
-      - aggregate_data
-      - aggregate_log
-      - ingest_log
-      - ingest_err
+      - add_data_aggregate_errors
+      - add_data_data
+      - add_data_aggregate_log
+      - add_data_ingest_log
+      - add_data_ingest_errors
       - vacuum_log
       - vacuum_err
 
@@ -365,8 +247,10 @@ outputs:
       type: array
       items:
         type: array
-        items: [File]
-    outputSource: process/aggregate_data
+        items:
+          type: array
+          items: [File]
+    outputSource: process/add_data_data
   download_log:
     type:
       type: array
@@ -387,30 +271,38 @@ outputs:
       type: array
       items:
         type: array
-        items: [File]
-    outputSource: process/aggregate_log
+        items:
+          type: array
+          items: [File]
+    outputSource: process/add_data_aggregate_log
   process_err:
     type:
       type: array
       items:
         type: array
-        items: [File]
-    outputSource: process/aggregate_err
+        items:
+          type: array
+          items: [File]
+    outputSource: process/add_data_aggregate_errors
 
   ingest_log:
     type:
       type: array
       items:
         type: array
-        items: [File]
-    outputSource: process/ingest_log
+        items:
+          type: array
+          items: [File]
+    outputSource: process/add_data_ingest_log
   ingest_err:
     type:
       type: array
       items:
         type: array
-        items: [File]
-    outputSource: process/ingest_err
+        items:
+          type: array
+          items: [File]
+    outputSource: process/add_data_ingest_errors
 
   reset_log:
     type:

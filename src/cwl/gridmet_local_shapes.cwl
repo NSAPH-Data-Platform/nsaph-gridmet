@@ -130,7 +130,7 @@ steps:
 
       steps:
         process:
-          run: process.cwl
+          run: add_daily_data.cwl
           doc: Processes data
           scatter: year
           scatterMethod:  nested_crossproduct

@@ -115,7 +115,7 @@ steps:
 
   aggregate:
     doc: Aggregate data over geographies
-    run: wustl_aggregate.cwl
+    run: aggregate_wustl.cwl
     in:
       strategy: strategy
       geography: geography

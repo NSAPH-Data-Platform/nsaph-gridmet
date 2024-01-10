@@ -34,7 +34,14 @@ requirements:
 
 doc: |
   This tool aggregates data in NetCDF or GeoTiff file over provided shapes
-  (zip codes or counties). It produces mean values
+  (zip codes or counties). It produces mean values over shape.
+  
+  The tool expects one value for every variable in every grid node. 
+  The variables are expected to be formatted as they are for 
+  [Atmospheric Composition Analysis Group of Washington University](https://sites.wustl.edu/acag/datasets/surface-pm2-5/)
+  
+  See also [aggregate_daily.cwl](aggregate_daily) - a tool, that expects 
+  multiple (daily) values at every grid node.
 
 inputs:
   strategy:
