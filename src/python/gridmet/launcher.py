@@ -49,6 +49,8 @@
 import logging
 from typing import List
 
+from nsaph_gis.compute_shape import StatsCounter
+
 from nsaph import init_logging
 
 from gridmet.config import GridMETContext
@@ -74,6 +76,11 @@ class Gridmet:
         if not context:
             context = GridMETContext(__doc__).instantiate()
         self.context = context
+        if context.statistics:
+            if ',' in context.statistics:
+                StatsCounter.statistics = context.statistics.split(',')
+            else:
+                StatsCounter.statistics = context.statistics
         self.tasks = self.collect_tasks()
 
     def collect_tasks(self) -> List:

@@ -28,7 +28,7 @@ import os
 from abc import ABC, abstractmethod
 from datetime import date, timedelta, datetime
 from enum import Enum
-from typing import List
+from typing import List, Dict
 
 from netCDF4._netCDF4 import Dataset
 from rasterstats.io import Raster
@@ -138,16 +138,19 @@ class ComputeGridmetTask(ABC):
     def get_key(self):
         pass
 
-    def get_days(self):
-        days = get_days(self.dataset)
-        if self.date_filter:
-            days = [
-                day for day in days
-                if self.date_filter.accept(self.to_date(day))
-            ]
+    def get_days(self) -> Dict:
+        all_days = get_days(self.dataset)
+        days = dict()
+        for i in range(len(all_days)):
+            day = all_days[i]
+            if self.date_filter:
+                if self.date_filter.accept(self.to_date(day)):
+                    days[day] = i
+            else:
+                days[day] = i
         return days
 
-    def prepare(self):
+    def prepare(self) -> Dict:
         if not self.affine:
             self.affine = get_affine_transform(self.infile, self.factor)
         logging.info("%s => %s", self.infile, self.outfile)
@@ -173,10 +176,10 @@ class ComputeGridmetTask(ABC):
                 writer.writerow([self.band.value, "date", self.get_key().lower()])
             self.collect_data(days, writer)
 
-    def collect_data(self, days: List, collector: Collector):
+    def collect_data(self, days: Dict, collector: Collector):
         t0 = datetime.now()
-        for idx in range(len(days)):
-            day = days[idx]
+        for day in days:
+            idx = days[day]
             layer = self.dataset[self.variable][idx, :, :]
             # layer = layer[layer.mask == False]
             t1 = datetime.now()
