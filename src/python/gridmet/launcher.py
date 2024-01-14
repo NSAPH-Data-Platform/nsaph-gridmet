@@ -47,6 +47,7 @@
 #
 
 import logging
+from datetime import datetime
 from typing import List
 
 from nsaph_gis.compute_shape import StatsCounter
@@ -55,6 +56,7 @@ from nsaph import init_logging
 
 from gridmet.config import GridMETContext
 from gridmet.task import GridmetTask
+from nsaph_utils.utils.io_utils import sizeof_fmt
 
 
 class Gridmet:
@@ -82,6 +84,7 @@ class Gridmet:
             else:
                 StatsCounter.statistics = context.statistics
         self.tasks = self.collect_tasks()
+        self.max_mem_used = 0
 
     def collect_tasks(self) -> List:
         tasks = [
@@ -99,9 +102,23 @@ class Gridmet:
 
         for task in self.tasks:
             task.execute()
+            if task.max_mem_used > self.max_mem_used:
+                self.max_mem_used = task.max_mem_used
+
+
+
+def main():
+    gridmet = Gridmet()
+    start = datetime.now()
+    gridmet.execute_sequentially()
+    end = datetime.now()
+    dt = str(end - start)
+
+    logging.info(
+        "All tasks have been executed. Resources: time: {}; memory: {}"
+        .format(dt, sizeof_fmt(gridmet.max_mem_used))
+    )
 
 
 if __name__ == '__main__':
-    gridmet = Gridmet()
-    gridmet.execute_sequentially()
-    print("All tasks have been executed")
+    main()

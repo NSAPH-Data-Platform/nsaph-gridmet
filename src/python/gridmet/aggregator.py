@@ -37,7 +37,7 @@ from nsaph.pg_keywords import PG_NUMERIC_TYPE, PG_DATE_TYPE, PG_STR_TYPE, \
     PG_INT_TYPE
 from nsaph_gis.compute_shape import StatsCounter
 from nsaph_gis.constants import RasterizationStrategy, Geography
-from nsaph_utils.utils.io_utils import fopen, CSVWriter, Collector
+from nsaph_utils.utils.io_utils import fopen, CSVWriter, Collector, sizeof_fmt
 
 from gridmet.gridmet_tools import get_affine_transform, disaggregate
 
@@ -70,6 +70,7 @@ class Aggregator(ABC):
             self.extra_headers, self.extra_values = extra_columns
         else:
             self.extra_headers, self.extra_values = None, None
+        self.max_mem_used = 0
 
     def prepare(self):
         if not self.affine:
@@ -234,11 +235,6 @@ class Aggregator(ABC):
                 if self.extra_values:
                     row += self.extra_values
                 writer.writerow(row)
-            logging.info(
-                "%s: %s completed in %s", str(datetime.now()),
-                fid,
-                str(datetime.now() - now)
-            )
         else:
             for record in StatsCounter.process_layers(
                     self.strategy,
@@ -252,11 +248,14 @@ class Aggregator(ABC):
                 if self.extra_values:
                     row += self.extra_values
                 writer.writerow(row)
-            logging.info(
-                "%s: %s completed in %s", str(datetime.now()),
-                fid,
-                str(datetime.now() - now)
-            )
+        self.max_mem_used = StatsCounter.max_mem_used
+        logging.info(
+            "%s: %s completed in %s, memory used: %s",
+            str(datetime.now()),
+            fid,
+            str(datetime.now() - now),
+            sizeof_fmt(self.max_mem_used)
+        )
 
 
 class NetCDFAggregator(Aggregator):

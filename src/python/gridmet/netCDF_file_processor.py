@@ -31,9 +31,12 @@ labels defined in the shape files to the aggregated values
 
 import logging
 import os
+from datetime import datetime
 from typing import Optional
 
+import psutil
 import yaml
+from nsaph_utils.utils.io_utils import sizeof_fmt
 
 from gridmet.gridmet_tools import find_shape_file
 from nsaph import init_logging
@@ -136,6 +139,7 @@ class NetCDFFile:
         return of[0]
 
     def execute(self):
+        start = datetime.now()
         if OutputType.aggregation in self.context.output:
             if os.path.isfile(self.infile):
                 self.aggregator.execute()
@@ -163,6 +167,20 @@ class NetCDFFile:
             with open (of, "wt") as out:
                 yaml.dump(registry, out)
             logging.info("Created data dictionary: " + os.path.abspath(of))
+        # Info:
+        end = datetime.now()
+        dt = str(end - start)
+        mem_info = psutil.Process(os.getpid()).memory_full_info()
+        if hasattr(mem_info, "uss"):
+            max_mem = mem_info.uss
+        else:
+            max_mem = mem_info.rss
+
+        logging.info(
+            "Tasks has been executed. Resources: time: {}; memory: {}"
+            .format(dt, sizeof_fmt(max_mem))
+        )
+
         return
 
 

@@ -6,7 +6,7 @@ with open("README.md", "r") as readme:
 
 setup(
     name='gridmet',
-    version="0.1.4",
+    version="0.1.5",
     url='https://github.com/NSAPH-Data-Platform/nsaph-gridmet',
     license='',
     author='Michael Bouzinier',

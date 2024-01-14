@@ -41,6 +41,7 @@ from nsaph_gis.compute_shape import StatsCounter
 from nsaph_gis.constants import Geography, RasterizationStrategy
 from nsaph_gis.geometry import PointInRaster
 from nsaph_utils.utils.io_utils import DownloadTask, fopen, as_stream
+from nsaph_utils.utils.profile_utils import mem
 
 NO_DATA = 32767.0  # The value filled in masked arrays in NetCDF files
 # for the masked cells
@@ -129,6 +130,7 @@ class ComputeGridmetTask(ABC):
         self.variable = None
         self.parallel = {Parallel.points}
         self.date_filter = date_filter
+        self.max_mem_used = 0
 
     @classmethod
     def get_variable(cls, dataset: Dataset,  variable: GridmetVariable):
@@ -257,6 +259,8 @@ class ComputeShapesTask(ComputeGridmetTask):
         for record in StatsCounter.process(self.strategy, self.shapefile, self.affine, layer, self.geography):
             writer.writerow([record.value, dt.strftime("%Y-%m-%d"), record.prop])
         logging.debug("%s: completed in %s", str(datetime.now()), str(datetime.now() - now))
+        if StatsCounter.max_mem_used > self.max_mem_used:
+            self.max_mem_used = StatsCounter.max_mem_used
 
 
 class ComputePointsTask(ComputeGridmetTask):
@@ -387,6 +391,7 @@ class DownloadGridmetTask:
         url = self.get_url(year, variable)
         target = os.path.join(destination, url.split('/')[-1])
         self.download_task = DownloadTask(target, [url])
+        self.max_mem_used = 0
 
     def target(self):
         """
@@ -416,6 +421,9 @@ class DownloadGridmetTask:
                 n += 1
                 if (n % 20) == 0:
                     print("*", end='')
+        m = mem()
+        if m > self.max_mem_used:
+            self.max_mem_used = m
         return
 
 
@@ -521,6 +529,7 @@ class GridmetTask:
             ]
         if not self.compute_tasks:
             raise Exception("Invalid combination of arguments")
+        self.max_mem_used = 0
 
     def execute(self):
         """
@@ -533,5 +542,9 @@ class GridmetTask:
 
         if self.download_task is not None:
             self.download_task.execute()
+            if self.download_task.max_mem_used > self.max_mem_used:
+                self.max_mem_used = self.download_task.max_mem_used
         for task in self.compute_tasks:
             task.execute()
+            if task.max_mem_used > self.max_mem_used:
+                self.max_mem_used = task.max_mem_used
