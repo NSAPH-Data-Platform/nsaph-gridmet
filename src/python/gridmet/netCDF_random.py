@@ -53,6 +53,26 @@ class NCViewer:
             self.lat = self.ds[self.lat_var]
         if self.lon_var:
             self.lon = self.ds[self.lon_var]
+        if hasattr(self.ds, "geospatial_lat_min"):
+            self.geospatial_lat_min = self.ds.geospatial_lat_min
+        else:
+            self.geospatial_lat_min = float(self.ds[self.lat_var][:].min())
+        if hasattr(self.ds, "geospatial_lat_resolution"):
+            self.geospatial_lat_resolution = self.ds.geospatial_lat_resolution
+        else:
+            span = float(self.ds[self.lat_var][:].max()) - self.geospatial_lat_min
+            n = self.ds[self.lat_var].shape[0]
+            self.geospatial_lat_resolution = span / n
+        if hasattr(self.ds, "geospatial_lon_min"):
+            self.geospatial_lon_min = self.ds.geospatial_lon_min
+        else:
+            self.geospatial_lon_min = float(self.ds[self.lon_var][:].min())
+        if hasattr(self.ds, "geospatial_lon_resolution"):
+            self.geospatial_lon_resolution = self.ds.geospatial_lon_resolution
+        else:
+            span = float(self.ds[self.lon_var][:].max()) - self.geospatial_lon_min
+            n = self.ds[self.lon_var].shape[0]
+            self.geospatial_lon_resolution = span / n
 
         for var in self.variables:
             try:
@@ -75,15 +95,35 @@ class NCViewer:
         var_dim = ','.join(self.ds[var].dimensions)
         print("Variable: {}; Dimensions: {}".format(var, var_dim))
 
+
+    def print_geo_var(self, var: str):
+        if 'lat' in var.lower():
+            lvar = self.lat_var
+            name = "Latitude"
+        elif 'lon' in var.lower():
+            lvar = self.lon_var
+            name = "Longitude"
+        else:
+            raise ValueError("Invalid name for Latitude/Longitude: " + var)
+        n = self.ds[lvar].shape[0]
+        min_val = float(self.ds[lvar][:].min())
+        max_val = float(self.ds[lvar][:].max())
+        d = max_val - min_val
+        print(
+            "{}: Var={}, size: {:d}; range: {:.2f} -- {:.2f} = {:.2f}"
+            .format(name, lvar, n, min_val, max_val, d)
+        )
+
     def print(self):
-        print("Latitude var: " + self.lat_var)
-        print("Latitude var: " + self.lon_var)
+        self.print_geo_var("lat")
+        self.print_geo_var("lon")
         print("=== Geographical variables:")
         for var in self.geovars:
             self.print_var(var)
         print("=== Non geographical variables: ")
         for var in self.nongeovars:
             self.print_var(var)
+        print("==== END ====")
 
     def print_metadata(self):
         print(self.ds)
@@ -181,11 +221,13 @@ class NCViewer:
 
     def find(self, dim: str, val: str):
         if dim == "lat":
-            x1 = self.ds.geospatial_lat_min
-            dx = self.ds.geospatial_lat_resolution
+            x1 = self.geospatial_lat_min
+            dx = self.geospatial_lat_resolution
+            var = self.lat_var
         elif dim == "lon":
-            x1 = self.ds.geospatial_lon_min
-            dx = self.ds.geospatial_lon_resolution
+            x1 = self.geospatial_lon_min
+            dx = self.geospatial_lon_resolution
+            var = self.lon_var
         else:
             raise ValueError("How to set " + dim)
         dval = float(val)
@@ -194,10 +236,16 @@ class NCViewer:
         d = int((dval - x1) / dx)
         if dval - d > (dx/2):
             d += 1
-        if float(self.ds[dim][1]) < float(self.ds[dim][0]):
-            d = self.ds[dim].shape[0] - d
+        if float(self.ds[var][1]) < float(self.ds[var][0]):
+            d = self.ds[var].shape[0] - d
         return d
 
+    def map_var(self, var: str) -> str:
+        if var.lower() == "lat":
+            return self.lat_var
+        elif var.lower() == "lon":
+            return self.lon_var
+        return var
 
     def set_args(self, argv: List[str]):
         for i in range(1, len(sys.argv)):
@@ -209,7 +257,7 @@ class NCViewer:
                     y = int(y)
                 elif x in ["lat", "lon"]:
                     y = self.find(x, y)
-                self.center_point[x] = y
+                self.center_point[self.map_var(x)] = y
 
 
 if __name__ == '__main__':
@@ -220,6 +268,7 @@ if __name__ == '__main__':
         sample_size = 20
     random.seed(0)
     viewer = NCViewer(fn, sample_size)
+    viewer.print_metadata()
     viewer.print()
     if len(viewer.geovars) < 1:
         print("No variables in the dataset")

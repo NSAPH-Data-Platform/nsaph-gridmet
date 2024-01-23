@@ -34,7 +34,6 @@ import os
 from datetime import datetime
 from typing import Optional
 
-import psutil
 import yaml
 from nsaph_utils.utils.io_utils import sizeof_fmt
 
@@ -170,12 +169,7 @@ class NetCDFFile:
         # Info:
         end = datetime.now()
         dt = str(end - start)
-        mem_info = psutil.Process(os.getpid()).memory_full_info()
-        if hasattr(mem_info, "uss"):
-            max_mem = mem_info.uss
-        else:
-            max_mem = mem_info.rss
-
+        max_mem = self.aggregator.max_mem_used
         logging.info(
             "Tasks has been executed. Resources: time: {}; memory: {}"
             .format(dt, sizeof_fmt(max_mem))

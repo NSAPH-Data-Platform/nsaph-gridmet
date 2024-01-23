@@ -29,6 +29,7 @@ import sys
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import List, Tuple, Set, Any
+from nsaph_utils.utils.profile_utils import mem, qmem, qqmem
 
 import rasterio
 from netCDF4 import Dataset
@@ -70,7 +71,7 @@ class Aggregator(ABC):
             self.extra_headers, self.extra_values = extra_columns
         else:
             self.extra_headers, self.extra_values = None, None
-        self.max_mem_used = 0
+        self.max_mem_used = mem()
 
     def prepare(self):
         if not self.affine:
@@ -170,6 +171,9 @@ class Aggregator(ABC):
 
         domain[domain_name]["tables"][table_name] = table
 
+        m = qmem()
+        if m > self.max_mem_used:
+            self.max_mem_used = m
         return domain
 
 
@@ -192,6 +196,9 @@ class Aggregator(ABC):
         with fopen(self.outfile, mode) as out:
             writer = CSVWriter(out)
             self.collect_data(writer)
+        m = qmem()
+        if m > self.max_mem_used:
+            self.max_mem_used = m
 
     def collect_data(self, collector: Collector):
         t0 = datetime.now()
@@ -209,6 +216,9 @@ class Aggregator(ABC):
             layer = disaggregate(layer, self.factor)
         else:
             layer = layer[:]
+        m = qmem()
+        if m > self.max_mem_used:
+            self.max_mem_used = m
         return layer
 
     def compute(self, writer: Collector, layers):
@@ -248,7 +258,8 @@ class Aggregator(ABC):
                 if self.extra_values:
                     row += self.extra_values
                 writer.writerow(row)
-        self.max_mem_used = StatsCounter.max_mem_used
+        if StatsCounter.max_mem_used > self.max_mem_used:
+            self.max_mem_used = StatsCounter.max_mem_used
         logging.info(
             "%s: %s completed in %s, memory used: %s",
             str(datetime.now()),
