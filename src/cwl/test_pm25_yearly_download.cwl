@@ -23,20 +23,34 @@ inputs:
     - SO4
     - SOIL
     - SS
+    doc: "Optional components provided as percentages in a separate set \nof netCDF\
+      \ files\n"
     type: string[]
   connection_name:
-    doc: The name of the section in the database.ini file
+    doc: 'The name of the section in the database.ini file or a literal
+
+      `None` to skip over database ingestion step
+
+      '
     type: string
   database:
-    doc: Path to database connection file, usually database.ini
+    default:
+      class: File
+      path: database.ini
+    doc: "Path to database connection file, usually database.ini. \nThis argument\
+      \ is ignored if `connection_name` == `None`\n"
     type: File
   downloads:
-    doc: Directory, containing files, downloaded and unpacked from WUSTL box
+    doc: "Local or AWS bucket folder containing netCDF grid files, downloaded \nand\
+      \ unpacked from Washington University in St. Louis (WUSTL) Box\nsite. Annual\
+      \ and monthly data repositories are described in\n[WUSTL Atmospheric Composition\
+      \ Analysis Group](https://sites.wustl.edu/acag/datasets/surface-pm2-5/).\n\n\
+      The annual data for PM2.5 is also available in \na Harvard URC AWS Bucket: `s3://nsaph-public/data/exposures/wustl/`\n"
     type: Directory
   geography:
     doc: 'Type of geography: zip codes or counties
 
-      Valid values: "zip", "zcta" or "county"
+      Supported values: "zip", "zcta" or "county"
 
       '
     type: string
@@ -44,23 +58,39 @@ inputs:
     default: ''
     doc: HTTP/HTTPS Proxy if required
     type: string?
+  ram:
+    default: 2GB
+    doc: Runtime memory, available to the process
+    type: string
   shape_file_collection:
     default: tiger
     doc: "[Collection of shapefiles](https://www2.census.gov/geo/tiger), \neither\
       \ GENZ or TIGER\n"
     type: string
   strategy:
-    default: downscale
-    doc: Rasterization strategy
+    default: auto
+    doc: 'Rasterization strategy, see
+
+      [documentation](https://nsaph-data-platform.github.io/nsaph-platform-docs/common/gridmet/doc/strategy.html)
+
+      for the list of supported values and explanations
+
+      '
     type: string
   table:
-    doc: The name of the table to store teh aggreagted data in
+    default: pm25_aggregated
+    doc: The name of the table to store teh aggregated data in
     type: string
   test_script:
     doc: File containing SQL test script
     type: File
   variable:
     default: PM25
+    doc: 'The main variable that is being aggregated over shapes. We have tested
+
+      the pipeline for PM25
+
+      '
     type: string
   years:
     default:
@@ -96,6 +126,7 @@ steps:
       variable: variable
       component: component
       strategy: strategy
+      ram: ram
       shape_file_collection: shape_file_collection
       database: database
       connection_name: connection_name

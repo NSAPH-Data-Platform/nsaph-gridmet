@@ -59,8 +59,12 @@ inputs:
     # default: ['bi', 'erc', 'etr', 'fm100', 'fm1000', 'pet', 'pr', 'rmax', 'rmin', 'sph', 'srad', 'th', 'tmmn', 'tmmx', 'vpd', 'vs']
   strategy:
     type: string
-    default: downscale
+    default: auto
     doc: "Rasterization strategy"
+  ram:
+    type: string
+    default: 2GB
+    doc: Runtime memory, available to the process
   database:
     type: File
     doc: Path to database connection file, usually database.ini
@@ -209,6 +213,7 @@ steps:
       shapes: shapes
       geography: geography
       strategy: strategy
+      ram: ram
       year: years
       dates: dates
       band: bands

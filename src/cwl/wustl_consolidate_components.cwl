@@ -28,6 +28,7 @@ requirements:
   ResourceRequirement:
     # coresMin: 1
     coresMax: 4
+    outdirMin: 3072
 
 
 doc: |

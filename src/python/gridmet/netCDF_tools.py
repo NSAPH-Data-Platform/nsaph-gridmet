@@ -1,8 +1,7 @@
 """
-Reaself.ds a NetCDF file (*.nc) and prints some information
+Reads a NetCDF file (*.nc) and prints some information
 about it
 """
-
 #  Copyright (c) 2021. Harvard University
 #
 #  Developed by Research Software Engineering,
@@ -27,7 +26,8 @@ from typing import List, Tuple, Dict
 import netCDF4 as nc
 import random
 
-from gridmet.gridmet_tools import get_address
+from gridmet.gridmet_tools import get_address, \
+    estimate_optimal_downscaling_factor
 
 
 class NCViewer:
@@ -53,6 +53,11 @@ class NCViewer:
             self.lat = self.ds[self.lat_var]
         if self.lon_var:
             self.lon = self.ds[self.lon_var]
+
+        self.geospatial_shape = [
+            self.ds[self.lat_var].shape[0],
+            self.ds[self.lon_var].shape[0]
+        ]
         if hasattr(self.ds, "geospatial_lat_min"):
             self.geospatial_lat_min = self.ds.geospatial_lat_min
         else:
@@ -61,8 +66,8 @@ class NCViewer:
             self.geospatial_lat_resolution = self.ds.geospatial_lat_resolution
         else:
             span = float(self.ds[self.lat_var][:].max()) - self.geospatial_lat_min
-            n = self.ds[self.lat_var].shape[0]
-            self.geospatial_lat_resolution = span / n
+            self.geospatial_lat_resolution = span / self.geospatial_shape[0]
+
         if hasattr(self.ds, "geospatial_lon_min"):
             self.geospatial_lon_min = self.ds.geospatial_lon_min
         else:
@@ -71,11 +76,18 @@ class NCViewer:
             self.geospatial_lon_resolution = self.ds.geospatial_lon_resolution
         else:
             span = float(self.ds[self.lon_var][:].max()) - self.geospatial_lon_min
-            n = self.ds[self.lon_var].shape[0]
-            self.geospatial_lon_resolution = span / n
+            self.geospatial_lon_resolution = span / self.geospatial_shape[1]
 
+        self.missing_value = None
+        self.missing_values = dict()
         for var in self.variables:
             try:
+                if hasattr(self.ds[var], "missing_value"):
+                    self.missing_values[var] = float(self.ds[var].missing_value)
+                    if self.missing_value is None:
+                        self.missing_value = self.missing_values[var]
+                    elif self.missing_value != self.missing_values[var]:
+                        self.missing_value = 0
                 f = 0
                 for d in self.ds[var].dimensions:
                     if d == self.lat_var:
@@ -91,10 +103,23 @@ class NCViewer:
 
         return
 
+    def get_geospatial_size(self):
+        return self.geospatial_shape[0] * self.geospatial_shape[1]
+
+    def get_optimal_downscaling_factor(self, ram: int):
+        return estimate_optimal_downscaling_factor(
+            size=self.get_geospatial_size(),
+            ram=ram
+        )
+
     def print_var(self, var: str):
         var_dim = ','.join(self.ds[var].dimensions)
-        print("Variable: {}; Dimensions: {}".format(var, var_dim))
-
+        mval = self.missing_values.get(var)
+        shape = " x ".join(str(s) for s in self.ds[var].shape)
+        print(
+            "Variable: {}; Dimensions: {}; Missing value: {}; shape: {}"
+            .format(var, var_dim, str(mval), shape)
+        )
 
     def print_geo_var(self, var: str):
         if 'lat' in var.lower():
@@ -275,6 +300,14 @@ if __name__ == '__main__':
         exit(0)
 
     viewer.set_args(argv=sys.argv[1:])
+
+    for m in range(1, 16):
+        mm = m * 1000 * 1000 * 1000
+        print(
+            "Memory: {:d}GB: downscale = {:d}"
+            .format(m, viewer.get_optimal_downscaling_factor(mm))
+        )
+    
     if viewer.lon_var in viewer.center_point:
         viewer.print_by_geography(viewer.generate_area())
     else:

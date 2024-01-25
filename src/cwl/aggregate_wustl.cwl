@@ -50,6 +50,12 @@ inputs:
     inputBinding:
       prefix: --strategy
     doc: "Rasterization strategy"
+  ram:
+    type: string
+    default: 2GB
+    doc: Runtime memory, available to the process
+    inputBinding:
+      prefix: --ram
   shapes_dir:
     type: Directory?
     inputBinding:

@@ -254,6 +254,11 @@ class GridContext(Context):
                        default=[OutputType.aggregation.value],
                        help="What the tool should output",
                        valid_values=[v.value for v in OutputType])
+    _ram = Argument("ram",
+                    cardinality=Cardinality.single,
+                    help="Runtime memory available to the process",
+                    default="2G"
+    )
 
     def __init__(self, subclass = None, doc = None):
         """
@@ -314,6 +319,8 @@ class GridContext(Context):
         '''Name of the table where the aggregated data will be stored'''
         self.output = None
         '''Type of the output the tool should produce'''
+        self.ram = None
+        '''Runtime memory available to the process'''
 
         if subclass is None:
             super().__init__(GridContext, doc, include_default = True)
@@ -337,6 +344,26 @@ class GridContext(Context):
         if attr == self._dates.name:
             if value:
                 return DateFilter(value)
+        if attr == self._ram.name:
+            value = value.strip().lower()
+            nv = ""
+            postfix = ""
+            for c in value:
+                if c.isdigit():
+                    nv += c
+                else:
+                    postfix += c
+            n = int(nv)
+            m = {
+                "": 1,
+                "k": 1000,
+                "m": 1000000,
+                "g": 1000000000,
+                "t": 1000000000000
+            }.get(postfix[0])
+            if m is None:
+                raise ValueError("Invalid value for RAM: " + value)
+            value = n * m
         return value
 
 

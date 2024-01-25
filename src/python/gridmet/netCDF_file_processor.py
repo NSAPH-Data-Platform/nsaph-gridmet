@@ -32,7 +32,7 @@ labels defined in the shape files to the aggregated values
 import logging
 import os
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict
 
 import yaml
 from nsaph_utils.utils.io_utils import sizeof_fmt
@@ -124,7 +124,8 @@ class NetCDFFile:
             strategy=self.context.strategy,
             shapefile=shape_file,
             geography=self.context.geography,
-            extra_columns=self.extra_columns
+            extra_columns=self.extra_columns,
+            ram=self.context.ram
         )
         return
 
@@ -155,11 +156,7 @@ class NetCDFFile:
                 logging.info("Input file was not found. Created empty file: {}"
                              .format(os.path.abspath(of)))
         if OutputType.data_dictionary in self.context.output:
-            registry = self.aggregator.get_registry(
-            self.get_domain_name(),
-            self.get_table_name(),
-            description=self.context.description
-            )
+            registry = self.get_registry()
             of = os.path.join(
                 self.context.destination, self.get_domain_name() + ".yaml"
             )
@@ -176,6 +173,13 @@ class NetCDFFile:
         )
 
         return
+
+    def get_registry(self) -> Dict:
+        return self.aggregator.get_registry(
+            self.get_domain_name(),
+            self.get_table_name(),
+            description=self.context.description
+        )
 
 
 if __name__ == '__main__':

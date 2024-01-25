@@ -47,6 +47,12 @@ inputs:
     type: Directory
   geography:
     type: string
+  shape_file_collection:
+    type: string
+    default: tiger
+    doc: |
+      [Collection of shapefiles](https://www2.census.gov/geo/tiger), 
+      either GENZ or TIGER
   table:
     type: string
   band:
@@ -59,6 +65,10 @@ inputs:
   strategy:
     type: string
     doc: "Rasterization strategy"
+  ram:
+    type: string
+    default: 2GB
+    doc: Runtime memory, available to the process
   database:
     type: File
   connection_name:
@@ -73,6 +83,7 @@ steps:
       yy: year
       geo: geography
       proxy: proxy
+      collection: shape_file_collection
     out: [shape_files]
 
   process_files:
@@ -87,6 +98,7 @@ steps:
       table: table
       geography:  geography
       strategy: strategy
+      ram: ram
       database: database
       connection_name: connection_name
       shape_files: get_shapes/shape_files

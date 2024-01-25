@@ -37,6 +37,7 @@ from tqdm import tqdm
 from gridmet.config import GridmetVariable, GridMETContext, Shape
 from gridmet.gridmet_tools import find_shape_file, get_nkn_url, get_variable, get_days, \
     get_affine_transform, disaggregate
+from gridmet.netCDF_tools import NCViewer
 from nsaph_gis.compute_shape import StatsCounter
 from nsaph_gis.constants import Geography, RasterizationStrategy
 from nsaph_gis.geometry import PointInRaster
@@ -110,9 +111,10 @@ class ComputeGridmetTask(ABC):
     origin = date(1900, 1, 1)
 
     def __init__(self, year: int, variable: GridmetVariable, infile: str,
-                 outfile: str, date_filter=None):
+                 outfile: str, date_filter=None, ram: int=0):
         """
 
+        :param ram:
         :param date_filter:
         :param year: year
         :param variable: Gridemt band (variable)
@@ -131,6 +133,8 @@ class ComputeGridmetTask(ABC):
         self.parallel = {Parallel.points}
         self.date_filter = date_filter
         self.max_mem_used = 0
+        self.missing_value = None
+        self.ram = ram
 
     @classmethod
     def get_variable(cls, dataset: Dataset,  variable: GridmetVariable):
@@ -153,13 +157,22 @@ class ComputeGridmetTask(ABC):
         return days
 
     def prepare(self) -> Dict:
-        if not self.affine:
-            self.affine = get_affine_transform(self.infile, self.factor)
         logging.info("%s => %s", self.infile, self.outfile)
         self.dataset = Dataset(self.infile)
         days = self.get_days()
         self.variable = self.get_variable(self.dataset, self.band)
+        viewer = NCViewer(self.infile)
+        if viewer.missing_value:
+            self.missing_value = viewer.missing_value
+        self.factor = viewer.get_optimal_downscaling_factor(self.ram)
+        self.on_prepare()
+        if not self.affine:
+            self.affine = get_affine_transform(self.infile, self.factor)
+
         return days
+
+    def on_prepare(self):
+        pass
 
     def execute(self, mode: str = "wt"):
         """
@@ -221,9 +234,10 @@ class ComputeShapesTask(ComputeGridmetTask):
 
     def __init__(self, year: int, variable: GridmetVariable, infile: str,
                  outfile: str, strategy: RasterizationStrategy, shapefile: str,
-                 geography: Geography, date_filter=None):
+                 geography: Geography, date_filter=None, ram=0):
         """
 
+        :param ram:
         :param date_filter:
         :param year: year
         :param variable: gridMET band (variable)
@@ -234,14 +248,17 @@ class ComputeShapesTask(ComputeGridmetTask):
         :param geography: Type of geography, e.g. zip code or county
         """
 
-        super().__init__(year, variable, infile, outfile, date_filter)
-
-        if strategy == RasterizationStrategy.downscale:
-            self.factor = 5
+        super().__init__(year, variable, infile, outfile, date_filter, ram)
 
         self.strategy = strategy
         self.shapefile = shapefile
         self.geography = geography
+
+    def on_prepare(self):
+        if self.strategy in [
+            RasterizationStrategy.default, RasterizationStrategy.all_touched
+        ]:
+            self.factor = 1
 
     def get_key(self):
         return self.geography.value.upper()
@@ -256,7 +273,13 @@ class ComputeShapesTask(ComputeGridmetTask):
         now = datetime.now()
         logging.info("%s:%s:%s:%s", str(now), self.geography.value, self.band.value, dt)
 
-        for record in StatsCounter.process(self.strategy, self.shapefile, self.affine, layer, self.geography):
+        for record in StatsCounter.process(
+            self.strategy,
+            self.shapefile,
+            self.affine, layer,
+            self.geography,
+            self.missing_value
+        ):
             writer.writerow([record.value, dt.strftime("%Y-%m-%d"), record.prop])
         logging.debug("%s: completed in %s", str(datetime.now()), str(datetime.now() - now))
         if StatsCounter.max_mem_used > self.max_mem_used:
@@ -273,16 +296,12 @@ class ComputePointsTask(ComputeGridmetTask):
 
     force_standard_api = False
 
-    def __init__(self, year: int,
-                 variable: GridmetVariable,
-                 infile: str,
-                 outfile:str,
-                 points_file:str,
-                 coordinates: List,
-                 metadata: List,
-                 date_filter=None):
+    def __init__(self, year: int, variable: GridmetVariable, infile: str,
+                 outfile: str, points_file: str, coordinates: List,
+                 metadata: List, date_filter=None, ram=0):
         """
 
+        :param ram:
         :param year: year
         :param variable: Gridemt band (variable)
         :param infile: File with source data in  NCDF4 format
@@ -295,7 +314,7 @@ class ComputePointsTask(ComputeGridmetTask):
             interpreted as metadata (e.g. ZIP, site_id, etc.)
         """
 
-        super().__init__(year, variable, infile, outfile, date_filter)
+        super().__init__(year, variable, infile, outfile, date_filter, ram)
         self.points_file = points_file
 
         assert len(coordinates) == 2
@@ -306,15 +325,13 @@ class ComputePointsTask(ComputeGridmetTask):
     def get_key(self):
         return self.metadata[0]
 
-    def prepare(self):
-        ret = super().prepare()
-
+    def on_prepare(self):
         self.first_layer = Raster(
             self.dataset[self.variable][0, :, :],
             self.affine,
             nodata=-NO_DATA,
         )
-        return ret
+        return
 
     def make_point(self, row) -> PointInRaster:
         x = float(row[self.coordinates[0]])
@@ -500,9 +517,10 @@ class GridmetTask:
 
         if context.shape_files:
             self.compute_tasks = [
-                ComputeShapesTask(year, variable, self.raw_download,
-                                  result, context.strategy, shape_filename,
-                                  context.geography, context.dates)
+                ComputeShapesTask(year, variable, self.raw_download, result,
+                                  context.strategy, shape_filename,
+                                  context.geography, context.dates,
+                                  ram=context.ram)
                 for shape_filename in context.shape_files
             ]
 
@@ -510,7 +528,8 @@ class GridmetTask:
             self.compute_tasks = [
                 ComputeShapesTask(year, variable, self.download_task.target(),
                                   result, context.strategy, shape_file,
-                                  context.geography, context.dates)
+                                  context.geography, context.dates,
+                                  ram=context.ram)
                 for shape_file in [
                     self.find_shape_file(context, year, shape)
                     for shape in context.shapes
@@ -519,13 +538,9 @@ class GridmetTask:
 
         if Shape.point in context.shapes and context.points:
             self.compute_tasks += [
-                ComputePointsTask(year,
-                                  variable,
-                                  self.download_task.target(),
-                                  result,
-                                  context.points,
-                                  context.coordinates,
-                                  context.metadata)
+                ComputePointsTask(year, variable, self.download_task.target(),
+                                  result, context.points, context.coordinates,
+                                  context.metadata, ram=context.ram)
             ]
         if not self.compute_tasks:
             raise Exception("Invalid combination of arguments")

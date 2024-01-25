@@ -13,3 +13,6 @@ bands:
   - rmax
   - rmin
 geography: county
+strategy:  auto
+ram: 8G
+
