@@ -62,6 +62,10 @@ inputs:
     type: string?
   strategy:
     type: string
+  ram:
+    type: string
+    default: 2GB
+    doc: Runtime memory, available to the process
   months:
     type: int[]
     default: [1,2,3,4,5,6,7,8,9,10,11,12]
@@ -100,6 +104,7 @@ steps:
       band: band
       input: download/data
       strategy: strategy
+      ram: ram
       shape_files: get_shapes/shape_files
       month: months
       registry: model

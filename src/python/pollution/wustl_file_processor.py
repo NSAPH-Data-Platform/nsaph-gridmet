@@ -30,8 +30,12 @@ from the file name.
 
 `See data description: <https://sites.wustl.edu/acag/datasets/surface-pm2-5/>`_
 """
-
+import logging
+import os.path
 import re
+from typing import Dict
+
+import yaml
 
 from gridmet.netCDF_file_processor import NetCDFFile
 
@@ -104,6 +108,19 @@ class WUSTLFile(NetCDFFile):
         if self.context.statistics:
             t += "_" + self.context.statistics
         return t
+
+    def get_registry(self) -> Dict:
+        d = os.path.dirname(__file__)
+        p = os.path.join(d, "models", self.get_domain_name() + ".yaml")
+        if os.path.isfile(p):
+            with open(p) as r:
+                logging.info(
+                    "Retrieving data dictionary from: " + os.path.abspath(p)
+                )
+                registry = yaml.safe_load(r)
+                return registry
+        logging.info("Creating new generic data dictionary")
+        return super().get_registry()
 
 
 if __name__ == '__main__':

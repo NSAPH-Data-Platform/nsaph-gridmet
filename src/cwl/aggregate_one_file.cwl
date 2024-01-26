@@ -55,6 +55,10 @@ inputs:
   strategy:
     type: string
     doc: "Rasterization strategy"
+  ram:
+    type: string
+    default: 2GB
+    doc: Runtime memory, available to the process
   shape_file_collection:
     type: string
     default: tiger
@@ -118,6 +122,7 @@ steps:
     run: aggregate_wustl.cwl
     in:
       strategy: strategy
+      ram: ram
       geography: geography
       netcdf_data: consolidate/consolidated_data
       shape_files: get_shapes/shape_files

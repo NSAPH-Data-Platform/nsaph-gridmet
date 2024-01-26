@@ -43,6 +43,12 @@ inputs:
   shapes:
     type: Directory?
     doc: Do we even need this parameter, as we isntead downloading shapes?
+  shape_file_collection:
+    type: string
+    default: tiger
+    doc: |
+      [Collection of shapefiles](https://www2.census.gov/geo/tiger), 
+      either GENZ or TIGER
   downloads:
     type: Directory
     doc: Directory, containing files, downloaded and unpacked from WUSTL box
@@ -64,6 +70,10 @@ inputs:
     type: string
     default: downscale
     doc: "Rasterization strategy"
+  ram:
+    type: string
+    default: 2GB
+    doc: Runtime memory, available to the process
   database:
     type: File
     doc: Path to database connection file, usually database.ini
@@ -117,9 +127,11 @@ steps:
       months: months
       band: band
       strategy: strategy
+      ram: ram
       database: database
       connection_name: connection_name
       table: make_table_name/table
+      shape_file_collection: shape_file_collection
     out:
       - aggregate_data
       - aggregate_log

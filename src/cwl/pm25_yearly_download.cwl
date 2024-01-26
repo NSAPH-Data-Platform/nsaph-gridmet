@@ -108,12 +108,16 @@ inputs:
       of netCDF files
   strategy:
     type: string
-    default: downscale
+    default: auto
     doc: |
       Rasterization strategy, see
       [documentation](https://nsaph-data-platform.github.io/nsaph-platform-docs/common/gridmet/doc/strategy.html)
       for the list of supported values and explanations
-      
+  ram:
+    type: string
+    default: 2GB
+    doc: Runtime memory, available to the process
+
   shape_file_collection:
     type: string
     default: tiger
@@ -141,6 +145,16 @@ inputs:
 
 
 steps:
+  initdb:
+    run: initdb.cwl
+    doc: Ensure that database utilities are at their latest version
+    in:
+      database: database
+      connection_name: connection_name
+    out:
+      - log
+      - err
+
   process:
     doc: Downloads raw data and aggregates it over shapes and time
     scatter:
@@ -155,7 +169,9 @@ steps:
       variable: variable
       component: component
       strategy: strategy
+      ram: ram
       table: table
+      depends_on: initdb/log
     out:
       - shapes
       - aggregate_data

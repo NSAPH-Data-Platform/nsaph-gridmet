@@ -28,15 +28,99 @@ from pathlib import Path
 import yaml
 
 from nsaph import init_logging
-from nsaph.pg_keywords import PG_NUMERIC_TYPE, PG_DATE_TYPE, PG_INT_TYPE
+from nsaph.pg_keywords import PG_NUMERIC_TYPE, PG_DATE_TYPE, PG_STR_TYPE
 
 from gridmet.config import Geography, GridmetVariable
+
+
+DATE_COLUMN = "observation_date"
+EXTRACT_YEAR = f"(EXTRACT (YEAR FROM {DATE_COLUMN}))::INT"
 
 
 class Registry:
     """
     This class
     creates YAML data model for gridMET tables.
+    """
+
+    COMMON_COLUMNS = f"""
+        - year: 
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (EXTRACT (YEAR FROM {DATE_COLUMN})) STORED"
+            type: INT
+            index: true
+            doc: The year of the observation
+        - month: 
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (EXTRACT (MONTH FROM {DATE_COLUMN})) STORED"
+            type: INT
+            index: true
+            doc: The year of the observation
+        - day_of_the_year: 
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (EXTRACT (DOY FROM {DATE_COLUMN})) STORED"
+            type: INT
+            index: true
+            doc: The year of the observation
+    """
+
+    COUNTY_COLUMNS = """
+        - fips5:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (county::INT) STORED"
+            type: INT
+            doc: County FIPS code as an integer, value is equal to "county".
+        - fips2:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (substring(county, 1, 2)::INT) STORED"
+            type: INT
+            doc: FIPS code of the US State in which the county is located
+        - fips3:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (substring(county, 3, 3)::INT) STORED"
+            type: INT
+            doc: FIPS code of the county without state FIPS code
+        - state:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (public.fips2state(substring(county, 1, 2)::VARCHAR)) STORED"
+        - state_iso:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (public.fips2state_iso(substring(county, 1, 2))) STORED"
+    """
+    ZCTA_COLUMNS = f"""
+        - state:
+            index: true
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (public.zip_to_state({EXTRACT_YEAR}, zcta::INT)) STORED"
+            doc: |
+              This column is for informational purposes only. The US State or 
+              territory Id associated with this ZCTA. Some ZCTAs span over
+              more than one states or territories.
+        - city:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (public.zip_to_city({EXTRACT_YEAR}, zcta::INT)) STORED"
+            doc: |
+              This column is for informational purposes only. The name 
+              of the city preferred by the US Postal service for the ZIP code
+              associated with this ZCTA.
+        - county:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (public.zip_to_fips5({EXTRACT_YEAR}, zcta::INT)) STORED"
+            doc: |
+              This column is for informational purposes only. The US County  
+              FIPS code, for the county having the largest intersection 
+              in terms of population with this ZCTA. 
     """
 
     def __init__(self, destination:str, dn: str = None):
@@ -67,19 +151,28 @@ class Registry:
                 geo = geography.value
                 date_column = "observation_date"
                 tname = "{}_{}".format(geo, bnd)
+                columns = [
+                    {bnd: {
+                        "type": PG_NUMERIC_TYPE
+                    }},
+                    {date_column: {
+                        "type": PG_DATE_TYPE,
+                        "source": "date"
+                    }},
+                    {geo: {
+                        "type": PG_STR_TYPE
+                    }}
+                ]
+                common_columns = yaml.safe_load(self.COMMON_COLUMNS)
+                columns.extend(common_columns)
+                if geography == Geography.county:
+                    county_columns = yaml.safe_load(self.COUNTY_COLUMNS)
+                    columns.extend(county_columns)
+                elif geography == Geography.zcta:
+                    zcta_columns = yaml.safe_load(self.ZCTA_COLUMNS)
+                    columns.extend(zcta_columns)
                 table = {
-                    "columns": [
-                        {bnd: {
-                            "type": PG_NUMERIC_TYPE
-                        }},
-                        {date_column: {
-                            "type": PG_DATE_TYPE,
-                            "source": "date"
-                        }},
-                        {geo: {
-                            "type": PG_INT_TYPE
-                        }}
-                    ],
+                    "columns": columns,
                     "primary_key": [
                         geo,
                         date_column
@@ -87,10 +180,14 @@ class Registry:
                     "indices": {
                         "dt_geo_idx": {
                             "columns": [date_column, geo]
+                        },
+                        "ym_idx": {
+                            "columns": ["year", "month"]
+                        },
+                        "y_geo_idx": {
+                            "columns": ["year", geo]
                         }
                     }
-
-
                 }
                 domain[self.name]["tables"][tname] = table
 

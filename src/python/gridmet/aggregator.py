@@ -24,11 +24,14 @@ import abc
 #  limitations under the License.
 #
 import logging
+import math
 import os
 import sys
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import List, Tuple, Set, Any
+
+from gridmet.netCDF_tools import NCViewer
 from nsaph_utils.utils.profile_utils import mem, qmem, qqmem
 
 import rasterio
@@ -40,18 +43,30 @@ from nsaph_gis.compute_shape import StatsCounter
 from nsaph_gis.constants import RasterizationStrategy, Geography
 from nsaph_utils.utils.io_utils import fopen, CSVWriter, Collector, sizeof_fmt
 
-from gridmet.gridmet_tools import get_affine_transform, disaggregate
+from gridmet.gridmet_tools import get_affine_transform, disaggregate, \
+    estimate_optimal_downscaling_factor
 
 
 class Aggregator(ABC):
-    def __init__(self,
-                 infile: str,
-                 variable: str,
-                 outfile: str,
-                 strategy: RasterizationStrategy,
-                 shapefile: str,
+    def __init__(self, infile: str, variable: str, outfile: str,
+                 strategy: RasterizationStrategy, shapefile: str,
                  geography: Geography,
-                 extra_columns: Tuple[List[str], List[str]] = None):
+                 extra_columns: Tuple[List[str], List[str]] = None,
+                 ram=0):
+        """
+
+        :param infile: Path to file with raster data to be aggregated.
+            Can be either NetCDF or GeoTiff file
+        :param variable: Name of variable or variables that need to be
+            aggregated
+        :param outfile: Path to the output "csv.gz" file
+        :param strategy: Rasterization strategy
+        :param shapefile: Path to shapefile with polygons
+        :param geography: What kind of geography: US Counties or ZIP/ZCTA codes
+        :param extra_columns: if we need to add any extra columns to the CSV
+        :param ram: Runtime memory available to the process
+        """
+
         self.infile = infile
         self.outfile = outfile
         self.factor = 1
@@ -61,10 +76,7 @@ class Aggregator(ABC):
             self.aggr_variables = variable
         else:
             self.aggr_variables = [str(variable)]
-        if strategy == RasterizationStrategy.downscale:
-            self.factor = 5
 
-        self.strategy = strategy
         self.shapefile = shapefile
         self.geography = geography
         if extra_columns:
@@ -72,6 +84,25 @@ class Aggregator(ABC):
         else:
             self.extra_headers, self.extra_values = None, None
         self.max_mem_used = mem()
+        self.strategy = None
+        self.missing_value = None
+        self.ram = ram
+        self.set_strategy(strategy)
+
+    def set_strategy(self, strategy: RasterizationStrategy):
+        self.strategy = strategy
+        if self.strategy in [
+            RasterizationStrategy.default, RasterizationStrategy.all_touched
+        ]:
+            self.factor = 1
+            set_factor = False
+        else:
+            set_factor = True
+        ram = int (self.ram / math.sqrt(len(self.aggr_variables)))
+        self.on_set_strategy(ram, set_factor)
+
+    def on_set_strategy(self, ram: int, set_factor: bool):
+        pass
 
     def prepare(self):
         if not self.affine:
@@ -280,19 +311,28 @@ class NetCDFAggregator(Aggregator):
         logging.info("Extracting layer: " + var)
         return self.downscale(self.dataset[var])
 
+    def on_set_strategy(self, ram: int, set_factor):
+        viewer = NCViewer(self.infile)
+        if viewer.missing_value:
+            self.missing_value = viewer.missing_value
+        if set_factor:
+            self.factor = viewer.get_optimal_downscaling_factor(ram)
+
 
 class GeoTiffAggregator(Aggregator):
 
     def __init__(self, infile: str, variable: str, outfile: str,
                  strategy: RasterizationStrategy, shapefile: str,
                  geography: Geography,
-                 extra_columns: Tuple[List[str], List[str]] = None):
+                 extra_columns: Tuple[List[str], List[str]] = None,
+                 ram: int = 0):
         super().__init__(infile, variable, outfile, strategy, shapefile,
-                         geography, extra_columns)
+                         geography, extra_columns, ram)
         self.array = None
 
     def open(self):
-        self.dataset = rasterio.open(self.infile)
+        if self.dataset is None:
+            self.dataset = rasterio.open(self.infile)
         self.array = self.dataset.read()
 
     def get_dataset_variables(self) -> Set[str]:
@@ -304,6 +344,12 @@ class GeoTiffAggregator(Aggregator):
             raise ValueError(f'Variable {var} is not in the dataset')
         idx = self.dataset.descriptions.index(var)
         return self.downscale(self.array[idx])
+
+    def on_set_strategy(self, ram: int, set_factor):
+        self.dataset = rasterio.open(self.infile)
+        grid_size = self.dataset.shape[0] * self.dataset.shape[1]
+        if set_factor:
+            self.factor = estimate_optimal_downscaling_factor(grid_size, ram)
 
 
 if __name__ == '__main__':

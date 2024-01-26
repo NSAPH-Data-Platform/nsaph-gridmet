@@ -39,6 +39,10 @@ inputs:
     type: string
     default: downscale
     doc: "Rasterization strategy"
+  ram:
+    type: string
+    default: 2GB
+    doc: Runtime memory, available to the process
   shapes:
     type: Directory?
   geography:
@@ -87,6 +91,7 @@ steps:
       band: band
       input: input
       strategy: strategy
+      ram: ram
       shape_files: shape_files
       month: month
     out:

@@ -17,6 +17,7 @@
 #  limitations under the License.
 #
 import glob
+import math
 import os
 from typing import List, Optional
 import rasterio
@@ -195,6 +196,19 @@ def disaggregate(layer, factor: int):
 
 
 geolocator = geopy.Nominatim(user_agent='NSAPH')
+
+
 def get_address(latitude:float, longitude: float):
     location = geolocator.reverse((latitude, longitude))
     return location
+
+
+def estimate_optimal_downscaling_factor(size: int, ram: int):
+    x = ram / 1000000000
+    max_size = 50000000.0
+    if x > 1:
+        max_size *= x
+    f = math.sqrt(max_size / size)
+    if f < 1:
+        f = 1
+    return int(f)

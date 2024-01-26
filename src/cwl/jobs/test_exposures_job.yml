@@ -11,5 +11,5 @@ geography:  zcta
 downloads:
   path: "s3://nsaph-public/data/exposures/wustl/"
   class: Directory
-strategy:   default
+strategy:   auto
 shape_file_collection:  tiger

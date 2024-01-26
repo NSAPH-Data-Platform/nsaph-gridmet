@@ -57,6 +57,10 @@ inputs:
   strategy:
     type: string
     doc: "Rasterization strategy"
+  ram:
+    type: string
+    default: 2GB
+    doc: Runtime memory, available to the process
   database:
     type: File
   connection_name:
@@ -113,6 +117,7 @@ steps:
     run: aggregate_wustl.cwl
     in:
       strategy: strategy
+      ram: ram
       band:
         valueFrom: $([inputs.sband])
       sband: band

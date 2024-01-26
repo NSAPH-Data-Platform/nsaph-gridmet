@@ -37,14 +37,20 @@ exposures:
             source:
               type: "generated"
               code: "GENERATED ALWAYS AS (county::INT) STORED"
+            type: INT
+            doc: County FIPS code as an integer, value is equal to "county".
         - fips2:
             source:
               type: "generated"
               code: "GENERATED ALWAYS AS (substring(county, 1, 2)::INT) STORED"
+            type: INT
+            doc: FIPS code of the US State in which the county is located
         - fips3:
             source:
               type: "generated"
               code: "GENERATED ALWAYS AS (substring(county, 3, 3)::INT) STORED"
+            type: INT
+            doc: FIPS code of the county without state FIPS code
         - state:
             source:
               type: "generated"
@@ -85,6 +91,31 @@ exposures:
             type: INT
         - PM25:
             type: NUMERIC
+        - state:
+            index: true
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (public.zip_to_state(year, zcta::INT)) STORED"
+            doc: |
+              This column is for informational purposes only. The US State or 
+              territory Id associated with this ZCTA. Some ZCTAs span over
+              more than one states or territories.
+        - city:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (public.zip_to_city(year, zcta::INT)) STORED"
+            doc: |
+              This column is for informational purposes only. The name 
+              of the city preferred by the US Postal service for the ZIP code
+              associated with this ZCTA.
+        - county:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (public.zip_to_fips5(year, zcta::INT)) STORED"
+            doc: |
+              This column is for informational purposes only. The US County  
+              FIPS code, for the county having the largest intersection 
+              in terms of population with this ZCTA. 
 
       primary_key:
         - zcta
@@ -118,6 +149,32 @@ exposures:
       - Year:
           index: true
           type: INT
+      - state:
+          index: true
+          source:
+            type: "generated"
+            code: "GENERATED ALWAYS AS (public.zip_to_state(year, zcta::INT)) STORED"
+          doc: |
+            This column is for informational purposes only. The US State or 
+            territory Id associated with this ZCTA. Some ZCTAs span over
+            more than one states or territories.
+      - city:
+          source:
+            type: "generated"
+            code: "GENERATED ALWAYS AS (public.zip_to_city(year, zcta::INT)) STORED"
+          doc: |
+            This column is for informational purposes only. The name 
+            of the city preferred by the US Postal service for the ZIP code
+            associated with this ZCTA.
+      - county:
+          source:
+            type: "generated"
+            code: "GENERATED ALWAYS AS (public.zip_to_fips5(year, zcta::INT)) STORED"
+          doc: |
+            This column is for informational purposes only. The US County  
+            FIPS code, for the county having the largest intersection 
+            in terms of population with this ZCTA. 
+
       primary_key:
       - zcta
       - Year
@@ -125,7 +182,7 @@ exposures:
     pm25_components_annual_county_mean:
       description: |
         Estimated annual ground-level fine particulate matter
-        Aggregated at US ZCTA level
+        Aggregated at US Counties level
       columns:
         - PM25:
             type: NUMERIC
@@ -143,12 +200,39 @@ exposures:
             type: NUMERIC
         - SS:
             type: NUMERIC
-        - zcta:
+        - county:
             index: true
             type: VARCHAR
+            doc: County FIPS code as a string, value is equal to "fips5"
         - Year:
             index: true
             type: INT
+        - fips5:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (county::INT) STORED"
+            type: INT
+            doc: County FIPS code as an integer, value is equal to "county".
+        - fips2:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (substring(county, 1, 2)::INT) STORED"
+            type: INT
+            doc: FIPS code of the US State in which the county is located
+        - fips3:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (substring(county, 3, 3)::INT) STORED"
+            type: INT
+            doc: FIPS code of the county without state FIPS code
+        - state:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (public.fips2state(substring(county, 1, 2)::VARCHAR)) STORED"
+        - state_iso:
+            source:
+              type: "generated"
+              code: "GENERATED ALWAYS AS (public.fips2state_iso(substring(county, 1, 2))) STORED"
       primary_key:
         - county
         - Year
