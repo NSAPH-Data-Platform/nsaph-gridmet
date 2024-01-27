@@ -256,9 +256,10 @@ class Aggregator(ABC):
         fid, _ = os.path.splitext(os.path.basename(self.infile))
         now = datetime.now()
         logging.info(
-            "%s:%s:%s: %s",
+            "%s:%s:strategy=%s:%s: %s",
             str(now),
             self.geography.value,
+            self.strategy.value,
             self.aggr_variables,
             fid
         )

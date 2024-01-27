@@ -82,6 +82,16 @@ inputs:
     doc: The name of the section in the database.ini file
 
 steps:
+  initdb:
+    run: initdb.cwl
+    doc: Ensure that database utilities are at their latest version
+    in:
+      database: database
+      connection_name: connection_name
+    out:
+      - log
+      - err
+
   make_table_name:
     doc: Given variable and geography type (zip/county) evaluates table name
     run:
@@ -109,6 +119,7 @@ steps:
       database: database
       connection_name: connection_name
       table: make_table_name/table
+      depends_on: initdb/log
     out:
       - log
       - errors

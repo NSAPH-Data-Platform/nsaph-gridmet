@@ -33,6 +33,7 @@ requirements:
   ResourceRequirement:
     # coresMin: 1
     coresMax: 2
+    ramMin: 16384
 
 
 doc: |
