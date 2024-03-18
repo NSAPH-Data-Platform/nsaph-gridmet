@@ -166,10 +166,15 @@ class NetCDFFile:
         # Info:
         end = datetime.now()
         dt = str(end - start)
-        max_mem = self.aggregator.max_mem_used
         logging.info(
-            "Tasks has been executed. Resources: time: {}; memory: {}"
-            .format(dt, sizeof_fmt(max_mem))
+            "Tasks have been executed. Resources: "
+            + "factor: %d ; shape: %d x %d ; time: %s ; memory: %d (%s)",
+            self.aggregator.factor,
+            self.aggregator.shape_x,
+            self.aggregator.shape_x,
+            dt,
+            self.aggregator.max_mem_used,
+            sizeof_fmt(self.aggregator.max_mem_used)
         )
 
         return

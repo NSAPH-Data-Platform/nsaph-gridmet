@@ -102,9 +102,8 @@ class Gridmet:
 
         for task in self.tasks:
             task.execute()
-            if task.max_mem_used > self.max_mem_used:
+            if task.perf.max_mem > self.max_mem_used:
                 self.max_mem_used = task.max_mem_used
-
 
 
 def main():

@@ -102,6 +102,15 @@ class ListCollector(Collector):
         return self.collection
 
 
+class PerfData:
+    def __init__(self):
+        self.max_mem = 0
+        self.factor = 1
+        self.shape_x = 0
+        self.shape_y = 0
+
+
+
 class ComputeGridmetTask(ABC):
     """
     An abstract class for a computational task that processes data in
@@ -132,7 +141,7 @@ class ComputeGridmetTask(ABC):
         self.variable = None
         self.parallel = {Parallel.points}
         self.date_filter = date_filter
-        self.max_mem_used = 0
+        self.perf = PerfData()
         self.missing_value = None
         self.ram = ram
 
@@ -271,7 +280,14 @@ class ComputeShapesTask(ComputeGridmetTask):
             layer = disaggregate(layer, self.factor)
 
         now = datetime.now()
-        logging.info("%s:%s:%s:%s", str(now), self.geography.value, self.band.value, dt)
+        logging.info(
+            "%s:%s:%s:%s: layer shape %s",
+            str(now),
+            self.geography.value,
+            self.band.value,
+            dt,
+            str(layer.shape)
+        )
 
         for record in StatsCounter.process(
             self.strategy,
@@ -282,8 +298,8 @@ class ComputeShapesTask(ComputeGridmetTask):
         ):
             writer.writerow([record.value, dt.strftime("%Y-%m-%d"), record.prop])
         logging.debug("%s: completed in %s", str(datetime.now()), str(datetime.now() - now))
-        if StatsCounter.max_mem_used > self.max_mem_used:
-            self.max_mem_used = StatsCounter.max_mem_used
+        if StatsCounter.max_mem_used > self.perf.max_mem:
+            self.perf.max_mem = StatsCounter.max_mem_used
 
 
 class ComputePointsTask(ComputeGridmetTask):

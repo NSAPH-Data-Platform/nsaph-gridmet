@@ -88,6 +88,8 @@ class Aggregator(ABC):
         self.missing_value = None
         self.ram = ram
         self.set_strategy(strategy)
+        self.shape_x = None
+        self.shape_y = None
 
     def set_strategy(self, strategy: RasterizationStrategy):
         self.strategy = strategy
@@ -255,14 +257,18 @@ class Aggregator(ABC):
     def compute(self, writer: Collector, layers):
         fid, _ = os.path.splitext(os.path.basename(self.infile))
         now = datetime.now()
+        shape = layers[0].shape
         logging.info(
-            "%s:%s:strategy=%s:%s: %s",
+            "%s:%s:strategy=%s:%s: %s: layer shape %s",
             str(now),
             self.geography.value,
             self.strategy.value,
             self.aggr_variables,
-            fid
+            fid,
+            str(shape)
         )
+        self.shape_x = layers[0].shape[0]
+        self.shape_y = layers[0].shape[1]
 
         if len(layers) == 1:
             layer = layers[0]
