@@ -84,7 +84,7 @@ class Gridmet:
             else:
                 StatsCounter.statistics = context.statistics
         self.tasks = self.collect_tasks()
-        self.max_mem_used = 0
+        self.perf_data = []
 
     def collect_tasks(self) -> List:
         tasks = [
@@ -102,21 +102,19 @@ class Gridmet:
 
         for task in self.tasks:
             task.execute()
-            if task.perf.max_mem > self.max_mem_used:
-                self.max_mem_used = task.max_mem_used
+            self.perf_data.append(task.perf)
+
+    def log_perf(self):
+        for p in self.perf_data:
+            p.log("Resources: ")
 
 
 def main():
     gridmet = Gridmet()
     start = datetime.now()
     gridmet.execute_sequentially()
-    end = datetime.now()
-    dt = str(end - start)
-
-    logging.info(
-        "All tasks have been executed. Resources: time: {}; memory: {}"
-        .format(dt, sizeof_fmt(gridmet.max_mem_used))
-    )
+    logging.info("All tasks have been executed.")
+    gridmet.log_perf()
 
 
 if __name__ == '__main__':

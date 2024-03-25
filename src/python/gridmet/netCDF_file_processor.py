@@ -165,18 +165,8 @@ class NetCDFFile:
             logging.info("Created data dictionary: " + os.path.abspath(of))
         # Info:
         end = datetime.now()
-        dt = str(end - start)
-        logging.info(
-            "Tasks have been executed. Resources: "
-            + "factor: %d ; shape: %d x %d ; time: %s ; memory: %d (%s)",
-            self.aggregator.factor,
-            self.aggregator.shape_x,
-            self.aggregator.shape_x,
-            dt,
-            self.aggregator.max_mem_used,
-            sizeof_fmt(self.aggregator.max_mem_used)
-        )
-
+        self.aggregator.perf.total_time = end - start
+        self.aggregator.perf.log("Resources: ")
         return
 
     def get_registry(self) -> Dict:

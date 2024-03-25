@@ -38,6 +38,7 @@ from gridmet.config import GridmetVariable, GridMETContext, Shape
 from gridmet.gridmet_tools import find_shape_file, get_nkn_url, get_variable, get_days, \
     get_affine_transform, disaggregate
 from gridmet.netCDF_tools import NCViewer
+from gridmet.prof import ProfilingData
 from nsaph_gis.compute_shape import StatsCounter
 from nsaph_gis.constants import Geography, RasterizationStrategy
 from nsaph_gis.geometry import PointInRaster
@@ -102,15 +103,6 @@ class ListCollector(Collector):
         return self.collection
 
 
-class PerfData:
-    def __init__(self):
-        self.max_mem = 0
-        self.factor = 1
-        self.shape_x = 0
-        self.shape_y = 0
-
-
-
 class ComputeGridmetTask(ABC):
     """
     An abstract class for a computational task that processes data in
@@ -141,7 +133,7 @@ class ComputeGridmetTask(ABC):
         self.variable = None
         self.parallel = {Parallel.points}
         self.date_filter = date_filter
-        self.perf = PerfData()
+        self.perf = ProfilingData()
         self.missing_value = None
         self.ram = ram
 
@@ -275,20 +267,30 @@ class ComputeShapesTask(ComputeGridmetTask):
     def compute_one_day(self, writer: Collector, day, layer):
         dt = self.to_date(day)
 
+        start_ts = datetime.now()
         if self.factor > 1:
             logging.info("Downscaling by the factor of " + str(self.factor))
             layer = disaggregate(layer, self.factor)
 
-        now = datetime.now()
+        if self.factor > self.perf.factor:
+            self.perf.factor = self.factor
+        x = layer.shape[0]
+        y = layer.shape[1]
+        if x > self.perf.shape_x:
+            self.perf.shape_x = x
+        if y > self.perf.shape_y:
+            self.perf.shape_y = y
+
         logging.info(
             "%s:%s:%s:%s: layer shape %s",
-            str(now),
+            str(start_ts),
             self.geography.value,
             self.band.value,
             dt,
             str(layer.shape)
         )
 
+        aggr_ts = datetime.now()
         for record in StatsCounter.process(
             self.strategy,
             self.shapefile,
@@ -297,9 +299,18 @@ class ComputeShapesTask(ComputeGridmetTask):
             self.missing_value
         ):
             writer.writerow([record.value, dt.strftime("%Y-%m-%d"), record.prop])
-        logging.debug("%s: completed in %s", str(datetime.now()), str(datetime.now() - now))
-        if StatsCounter.max_mem_used > self.perf.max_mem:
-            self.perf.max_mem = StatsCounter.max_mem_used
+
+        now = datetime.now()
+        delta_ts = now - start_ts
+        delta_aggr_ts = now -aggr_ts
+        logging.debug(
+            "Completed in %s, aggregation: %s",
+            delta_ts,
+            delta_aggr_ts
+        )
+        self.perf.update_mem_time(
+            StatsCounter.max_mem_used, delta_ts, delta_aggr_ts
+        )
 
 
 class ComputePointsTask(ComputeGridmetTask):
@@ -424,7 +435,8 @@ class DownloadGridmetTask:
         url = self.get_url(year, variable)
         target = os.path.join(destination, url.split('/')[-1])
         self.download_task = DownloadTask(target, [url])
-        self.max_mem_used = 0
+        self.perf = ProfilingData()
+        #self.max_mem_used = 0
 
     def target(self):
         """
@@ -443,6 +455,8 @@ class DownloadGridmetTask:
             logging.info("Up to date")
             return
         buffer = bytearray(self.BLOCK_SIZE)
+        start_ts = datetime.now()
+
         with fopen(self.target(), "wb") as writer, \
                 as_stream(self.download_task.urls[0]) as reader:
             n = 0
@@ -454,9 +468,7 @@ class DownloadGridmetTask:
                 n += 1
                 if (n % 20) == 0:
                     print("*", end='')
-        m = mem()
-        if m > self.max_mem_used:
-            self.max_mem_used = m
+        self.perf.update_mem_time(mem(), datetime.now() - start_ts)
         return
 
 
@@ -560,7 +572,7 @@ class GridmetTask:
             ]
         if not self.compute_tasks:
             raise Exception("Invalid combination of arguments")
-        self.max_mem_used = 0
+        self.perf = ProfilingData()
 
     def execute(self):
         """
@@ -573,9 +585,7 @@ class GridmetTask:
 
         if self.download_task is not None:
             self.download_task.execute()
-            if self.download_task.max_mem_used > self.max_mem_used:
-                self.max_mem_used = self.download_task.max_mem_used
+            self.perf.update(self.download_task.perf)
         for task in self.compute_tasks:
             task.execute()
-            if task.max_mem_used > self.max_mem_used:
-                self.max_mem_used = task.max_mem_used
+            self.perf.update(task.perf)

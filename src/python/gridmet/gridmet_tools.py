@@ -206,8 +206,7 @@ def get_address(latitude:float, longitude: float):
 def estimate_optimal_downscaling_factor(size: int, ram: int):
     x = ram / 1000000000
     max_size = 50000000.0
-    if x > 1:
-        max_size *= x
+    max_size *= x
     f = math.sqrt(max_size / size)
     if f < 1:
         f = 1

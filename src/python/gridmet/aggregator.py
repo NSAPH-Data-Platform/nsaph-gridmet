@@ -32,6 +32,7 @@ from datetime import datetime
 from typing import List, Tuple, Set, Any
 
 from gridmet.netCDF_tools import NCViewer
+from gridmet.prof import ProfilingData
 from nsaph_utils.utils.profile_utils import mem, qmem, qqmem
 
 import rasterio
@@ -83,13 +84,11 @@ class Aggregator(ABC):
             self.extra_headers, self.extra_values = extra_columns
         else:
             self.extra_headers, self.extra_values = None, None
-        self.max_mem_used = mem()
         self.strategy = None
         self.missing_value = None
         self.ram = ram
         self.set_strategy(strategy)
-        self.shape_x = None
-        self.shape_y = None
+        self.perf = ProfilingData()
 
     def set_strategy(self, strategy: RasterizationStrategy):
         self.strategy = strategy
@@ -157,6 +156,7 @@ class Aggregator(ABC):
 
     def get_registry(self, domain_name: str, table_name: str,
                      description: str = None):
+        t0 = datetime.now()
         if description is None:
             description = "Dorieh data model for aggregation of a grid"
         key = str(self.geography.value).lower()
@@ -205,10 +205,8 @@ class Aggregator(ABC):
         domain[domain_name]["tables"][table_name] = table
 
         m = qmem()
-        if m > self.max_mem_used:
-            self.max_mem_used = m
+        self.perf.update_mem_time(m, datetime.now() - t0)
         return domain
-
 
     def execute(self, mode: str = "wt"):
         """
@@ -230,8 +228,7 @@ class Aggregator(ABC):
             writer = CSVWriter(out)
             self.collect_data(writer)
         m = qmem()
-        if m > self.max_mem_used:
-            self.max_mem_used = m
+        self.perf.update_mem_only(m)
 
     def collect_data(self, collector: Collector):
         t0 = datetime.now()
@@ -250,8 +247,7 @@ class Aggregator(ABC):
         else:
             layer = layer[:]
         m = qmem()
-        if m > self.max_mem_used:
-            self.max_mem_used = m
+        self.perf.update_mem_only(m)
         return layer
 
     def compute(self, writer: Collector, layers):
@@ -267,8 +263,14 @@ class Aggregator(ABC):
             fid,
             str(shape)
         )
-        self.shape_x = layers[0].shape[0]
-        self.shape_y = layers[0].shape[1]
+        if self.factor > self.perf.factor:
+            self.perf.factor = self.factor
+        x = layers[0].shape[0]
+        y = layers[0].shape[1]
+        if x > self.perf.shape_x:
+            self.perf.shape_x = x
+        if y > self.perf.shape_y:
+            self.perf.shape_y = y
 
         if len(layers) == 1:
             layer = layers[0]
@@ -296,14 +298,14 @@ class Aggregator(ABC):
                 if self.extra_values:
                     row += self.extra_values
                 writer.writerow(row)
-        if StatsCounter.max_mem_used > self.max_mem_used:
-            self.max_mem_used = StatsCounter.max_mem_used
+        dt = datetime.now() - now
+        self.perf.update_mem_time(StatsCounter.max_mem_used, None, dt)
         logging.info(
             "%s: %s completed in %s, memory used: %s",
             str(datetime.now()),
             fid,
-            str(datetime.now() - now),
-            sizeof_fmt(self.max_mem_used)
+            dt,
+            sizeof_fmt(StatsCounter.max_mem_used)
         )
 
 
