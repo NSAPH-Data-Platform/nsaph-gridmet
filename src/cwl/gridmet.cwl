@@ -1,5 +1,5 @@
 #!/usr/bin/env cwl-runner
-### gridMET Pipeline
+### Pipeline to aggregate data from Climatology Lab
 #  Copyright (c) 2021-2022. Harvard University
 #
 #  Developed by Research Software Engineering,
@@ -31,9 +31,43 @@ requirements:
 
 
 doc: |
-  Downloads, processes gridMET data and ingests it into the database.
-  The workflow downloads raw data, aggregates it to calculate daily mean values
-  for each given geography and ingests it into the database
+  This workflow downloads NetCDF datasets from 
+  [University of Idaho Gridded Surface Meteorological Dataset](https://www.northwestknowledge.net/metdata/data/), 
+  aggregates gridded data to daily mean values over chosen geographies
+  and optionally ingests it into the database.
+  
+  The output of the workflow are gzipped CSV files containing
+  aggregated data. 
+  
+  Optionally, the aggregated data can be ingested into a database
+  specified in the connection parameters:
+  
+  * `database.ini` file containing connection descriptions
+  * `connection_name` a string referring to a section in the `database.ini`
+     file, identifying specific connection to be used.
+
+  The workflow can be invoked either by providing command line options 
+  as in the following example:
+  
+      toil-cwl-runner --retryCount 1 --cleanWorkDir never \ 
+          --outdir /scratch/work/exposures/outputs \ 
+          --workDir /scratch/work/exposures \
+          gridmet.cwl \  
+          --database /opt/local/database.ini \ 
+          --connection_name dorieh \ 
+          --bands rmin rmax \ 
+          --strategy auto \ 
+          --geography zcta \ 
+          --ram 8GB
+
+  Or, by providing a YaML file (see [example](../test_gridmet_job)) 
+  with similar options:
+  
+      toil-cwl-runner --retryCount 1 --cleanWorkDir never \ 
+          --outdir /scratch/work/exposures/outputs \ 
+          --workDir /scratch/work/exposures \
+          gridmet.cwl test_gridmet_job.yml 
+  
 
 inputs:
   proxy:
@@ -60,11 +94,16 @@ inputs:
   strategy:
     type: string
     default: auto
-    doc: "Rasterization strategy"
+    doc: |
+      [Rasterization strategy](https://nsaph-data-platform.github.io/nsaph-platform-docs/common/gridmet/doc/strategy.html)
+      used for spatial aggregation
   ram:
     type: string
     default: 2GB
-    doc: Runtime memory, available to the process
+    doc: |
+      Runtime memory, available to the process. When aggregation
+      strategy is `auto`, this value is used to calculate the optimal
+      downscaling factor for the available resources. 
   database:
     type: File
     doc: Path to database connection file, usually database.ini
@@ -87,7 +126,7 @@ steps:
       baseCommand: [python, -m, nsaph.util.psql]
       doc: |
         This tool executes an SQL statement in the database to grant
-        read priviligies to NSAPH users (memebrs of group nsaph_admin)
+        read privileges to NSAPH users (memebrs of group nsaph_admin)
       inputs:
         database:
           type: File

@@ -48,7 +48,7 @@ inputs:
   band:
     type: string
     doc: |
-      [Gridmet Band](https://gee.stac.cloud/WUtw2spmec7AM9rk6xMXUtStkMtbviDtHK?t=bands)
+      [Gridmet Band](https://developers.google.com/earth-engine/datasets/catalog/IDAHO_EPSCOR_GRIDMET#bands)
 
 arguments:
   - position: 1
